@@ -1,4 +1,4 @@
-#include "chunk.h"
+#include <scene/chunk.h>
 
 
 Chunk::Chunk(int x, int z) : m_blocks(), minX(x), minZ(z), m_neighbors{{XPOS, nullptr}, {XNEG, nullptr}, {ZPOS, nullptr}, {ZNEG, nullptr}}
