@@ -1,0 +1,4 @@
+#ifndef CHUNKCONSTANTS_H
+#define CHUNKCONSTANTS_H
+
+#endif // CHUNKCONSTANTS_H

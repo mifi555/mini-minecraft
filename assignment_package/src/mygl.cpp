@@ -71,6 +71,10 @@ void MyGL::initializeGL()
     glBindVertexArray(vao);
 
     m_terrain.CreateTestScene();
+
+    // todo: m_terrain.buildVBOData() or something to initialize the first chunks in the world.
+    //       buildVBOData() should also be called (for a specific chunk?) when the player modifies
+    //       terrain data.
 }
 
 void MyGL::resizeGL(int w, int h) {
