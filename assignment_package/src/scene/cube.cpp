@@ -119,7 +119,7 @@ void createCubeVertexNormals(glm::vec4 (&cub_vert_nor)[CUB_VERT_COUNT])
 void createCubeIndices(GLuint (&cub_idx)[CUB_IDX_COUNT])
 {
     int idx = 0;
-    for(int i = 0; i < 6; i++){
+    for(int i = 0; i < 6; i++) {
         cub_idx[idx++] = i*4;
         cub_idx[idx++] = i*4+1;
         cub_idx[idx++] = i*4+2;
