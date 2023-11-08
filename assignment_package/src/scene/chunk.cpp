@@ -1,6 +1,6 @@
 #include <scene/chunk.h>
 #include <array>
-
+#include "chunkconstants.h"
 
 Chunk::Chunk(OpenGLContext* context, int x, int z)
     : Drawable(context),
@@ -48,27 +48,12 @@ void Chunk::buildInterleavedVBOFromData(std::vector<float> vertexData, std::vect
     // todo:
 }
 
-#define ARR_SIZE 4
-
-// for use in createVBOdata()
-struct BlockFace {
-    glm::ivec3 direction;
-    std::array<glm::vec4, ARR_SIZE> pos;
-    glm::vec4 nor;
-};
-
-// todo: values for pos and nor????
-std::array<BlockFace, 6> neighbouringFaces = { {
-    { glm::ivec3(1, 0, 0),  {}, glm::vec4(1,0,0,0) },                   // xpos  right face
-    { glm::ivec3(-1, 0, 0), {}, glm::vec4(-1,0,0,0)  },                 // xneg  left face
-    { glm::ivec3(0, 1, 0),  {}, glm::vec4(0,1,0,0) },                   // ypos  top face
-    { glm::ivec3(0, -1, 0), {}, glm::vec4(0,-1,0,0)  },                 // yneg  bottom face
-    { glm::ivec3(0, 0, 1),  {}, glm::vec4(0,0,1,0) },                   // zpos  front face
-    { glm::ivec3(0, 0, -1), {}, glm::vec4(0,0,-1,0)  }                  // zneg  back face
-}};
-
-// todo: this is temporary, before we reach milestone for defining UV coords for textured blocks
-std::unordered_map<BlockType, glm::vec4> blocktype_to_color;
+void insertVec4(std::vector<GLfloat> &v, const glm::vec4 &data) {
+    v.push_back(data.x);
+    v.push_back(data.y);
+    v.push_back(data.z);
+    v.push_back(data.w);
+}
 
 // Chunk information available to us:
 // - all block data in 16 x 256 x 16
@@ -80,28 +65,32 @@ void Chunk::createVBOdata() {
     // if a nebour is empty, add VBO data for a face in that direction
         // vertex pos, vertex col, v normal, idx
 
+    std::vector<GLfloat> vertexData;
+    std::vector<GLuint> idxData;
+    int idxCounter = 0;
+
     // zyx because it's more cache efficient
     for (int z = 0; z < 16; z++) {
         for (int y = 0; y < 256; y++) {
             for (int x = 0; x < 16; x++) {
                 BlockType current = this->getBlockAt(x, y, z);
-
                 if (current != EMPTY) {
-                    for (BlockFace& n : neighbouringFaces) {
+                    for (const ChunkConstants::BlockFace& n : ChunkConstants::neighbouringFaces) {
                         glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
                         BlockType neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         if (neighbour == EMPTY) {
-                            // add to vector of vec4 blah
+                            for (auto &pos : n.pos) {
+                                insertVec4(vertexData, glm::vec4(x, y, z, 1.f) + pos);  // vertex position
+                                insertVec4(vertexData, n.nor);                          // vertex normal
+                                insertVec4(vertexData, glm::vec4(1.f, 1.f, 1.f, 1.f));  // todo: vertex color
+                                idxData.push_back(idxCounter++);
+                            }
                         }
                     }
-                    //BlockType neighbour = this->getBlockAt(x - 1, y, z);
-//                    if (neighbour == EMPTY) {
-//                        // add to vector of vec4 data pos, nor, col, info for x - 1 face
-//                    }
-                    // x - 1, x + 1, z - 1, z + 1 (4 adjacent blocks...) ????
-
                 }
             }
         }
     }
+
+    buildInterleavedVBOFromData(vertexData, idxData);
 }
