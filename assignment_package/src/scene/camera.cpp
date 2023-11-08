@@ -35,3 +35,9 @@ void Camera::tick(float dT, InputBundle &input) {
 glm::mat4 Camera::getViewProj() const {
     return glm::perspective(glm::radians(m_fovy), m_aspect, m_near_clip, m_far_clip) * glm::lookAt(m_position, m_position + m_forward, m_up);
 }
+
+void Camera::setRotation(glm::mat3 rotationMatrix){
+    this->m_right = glm::normalize(glm::vec3(rotationMatrix[0]));
+    this->m_up = glm::normalize(glm::vec3(rotationMatrix[1]));
+    this->m_forward = glm::normalize(glm::vec3(rotationMatrix[2]));
+}
