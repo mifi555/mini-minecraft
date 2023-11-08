@@ -76,7 +76,7 @@ const static std::unordered_map<BlockType, glm::vec4> blocktype_to_color {
     {DIRT, glm::vec4(1.f)},
     {STONE, glm::vec4(1.f)},
     {WATER, glm::vec4(1.f)},
-}
+    };
 
 } // namespace constants
 
