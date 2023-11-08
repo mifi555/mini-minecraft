@@ -85,7 +85,6 @@ bool Terrain::hasChunkAt(int x, int z) const {
     return m_chunks.find(toKey(16 * xFloor, 16 * zFloor)) != m_chunks.end();
 }
 
-
 uPtr<Chunk>& Terrain::getChunkAt(int x, int z) {
     int xFloor = static_cast<int>(glm::floor(x / 16.f));
     int zFloor = static_cast<int>(glm::floor(z / 16.f));
@@ -140,15 +139,7 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
     return cPtr;
 }
 
-// TODO: When you make Chunk inherit from Drawable, change this code so
-// it draws each Chunk with the given ShaderProgram, remembering to set the
-// model matrix to the proper X and Z translation!
 void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram) {
-    //m_geomCube.clearOffsetBuf();
-    //m_geomCube.clearColorBuf();
-
-    //std::vector<glm::vec3> offsets, colors;
-
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
             const uPtr<Chunk> &chunk = getChunkAt(x, z);
@@ -156,10 +147,6 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
             shaderProgram->drawInterleaved(*chunk);
         }
     }
-
-
-    //m_geomCube.createInstancedVBOdata(offsets, colors);
-    //shaderProgram->drawInstanced(m_geomCube);
 }
 
 void Terrain::CreateTestScene()
@@ -183,6 +170,7 @@ void Terrain::CreateTestScene()
     // now exists.
     m_generatedTerrain.insert(toKey(0, 0));
 
+#if 1
     // Create the basic terrain floor
     for(int x = 0; x < 64; ++x) {
         for(int z = 0; z < 64; ++z) {
@@ -201,6 +189,8 @@ void Terrain::CreateTestScene()
         setBlockAt(x, 129, 63, GRASS);
         setBlockAt(0, 130, x, GRASS);
     }
+#endif
+
     // Add a central column
     for(int y = 129; y < 140; ++y) {
         setBlockAt(32, y, 32, GRASS);
@@ -211,6 +201,46 @@ void Terrain::CreateTestScene()
         c->createVBOdata();
     }
 }
+
+void Terrain::CreateTestSceneProceduralTerrain()
+{
+    std::vector<Chunk*> chunks;
+
+    // Create the Chunks that will
+    // store the blocks for our
+    // initial world space
+    for(int x = 0; x < 64; x += 16) {
+        for(int z = 0; z < 64; z += 16) {
+            Chunk* c = instantiateChunkAt(x, z);
+            chunks.push_back(c);
+        }
+    }
+    // Tell our existing terrain set that
+    // the "generated terrain zone" at (0,0)
+    // now exists.
+    m_generatedTerrain.insert(toKey(0, 0));
+
+    // create terrain
+    for(int x = 0; x < 64; ++x) {
+        for(int z = 0; z < 64; ++z) {
+            float grass = grasslandsYValue(glm::vec2(), glm::vec3(x, 1., z));
+            float mountains = mountainsYValue(glm::vec2(), glm::vec3(x, 1., z));
+            float t = biomeBlender(glm::vec2(x, z));
+            t = glm::smoothstep(0.6f, 0.4f, t);
+            float yMax = glm::mix(grass, mountains, t);
+
+            for (int y = 0; y < yMax; y++) {
+                setBlockAt(x, y, z, GRASS);
+            }
+        }
+    }
+
+    // create vbo data for newly created chunks
+    for (auto &c : chunks) {
+        c->createVBOdata();
+    }
+}
+
 
 // Various noise functions used for terrain biome generation.
 glm::vec2 Terrain::smoothF(glm::vec2 coords) {

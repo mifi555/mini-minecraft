@@ -70,7 +70,7 @@ void MyGL::initializeGL()
     // using multiple VAOs, we can just bind one once.
     glBindVertexArray(vao);
 
-    m_terrain.CreateTestScene();
+    m_terrain.CreateTestSceneProceduralTerrain();
 
     // TODO: m_terrain.buildVBOData() or something to initialize the first chunks in the world.
     //       buildVBOData() should also be called (for a specific chunk?) when the player modifies
@@ -137,9 +137,8 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
-    m_terrain.draw(0, 64, 0, 64, &m_progFlat);
+    m_terrain.draw(0, 64, 0, 64, &m_progLambert);
 }
-
 
 void MyGL::keyPressEvent(QKeyEvent *e) {
     float amount = 2.0f;

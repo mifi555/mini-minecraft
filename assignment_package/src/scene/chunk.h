@@ -53,6 +53,7 @@ private:
     std::unordered_map<Direction, Chunk*, EnumHash> m_neighbors;
 
 public:
+    // chunk is
     Chunk(OpenGLContext* context, int x, int z);
     BlockType getBlockAt(unsigned int x, unsigned int y, unsigned int z) const;
     BlockType getBlockAt(int x, int y, int z) const;

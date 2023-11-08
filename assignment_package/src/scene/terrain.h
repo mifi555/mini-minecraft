@@ -89,7 +89,11 @@ public:
     // see when the base code is run.
     void CreateTestScene();
 
+    // initialize chunks with procedural terrain
+    void CreateTestSceneProceduralTerrain();
+
     // Various noise functions and helpers used for terrain biome generation.
+
     glm::vec2 smoothF(glm::vec2 coords);
     float noise(glm::vec2 coords);
     float fbm(glm::vec2 coords);
@@ -97,6 +101,9 @@ public:
     float surflet(glm::vec2 point, glm::vec2 gridPoint);
     float perlinNoise(glm::vec2 coords);
     float worleyNoise(glm::vec2 coords);
+
+    // terrain generators
+
     float grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced);
     float mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced);
     float biomeBlender(glm::vec2 coords);

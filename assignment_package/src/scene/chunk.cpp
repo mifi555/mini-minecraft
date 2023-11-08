@@ -97,7 +97,6 @@ void Chunk::createVBOdata() {
     int idxCounter = 0;
 
     // zyx because it's more cache efficient
-    // TODO: this is going out of range. I temporarily limited for loop from 1 to 15, 1 to 255, 1 to 15 .....
     for (int z = 0; z < 16; z++) {
         for (int y = 0; y < 256; y++) {
             for (int x = 0; x < 16; x++) {
@@ -108,13 +107,17 @@ void Chunk::createVBOdata() {
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
                         glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
 
+                        BlockType neighbour;
+
                         if (offset.x < 0 || offset.x > 15 ||
                             offset.y < 0 || offset.y > 255 ||
                             offset.z < 0 || offset.z > 15) {
-                            continue;
+                            neighbour = EMPTY;
+                        } else {
+                            neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         }
 
-                        BlockType neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
+
                         if (neighbour == EMPTY) {
                             std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
                             for (size_t i = 0; i < n.pos.size(); i++) {
