@@ -41,7 +41,6 @@ struct EnumHash {
 // render all the world at once, while also not having
 // to render the world block by block.
 
-// TODO have Chunk inherit from Drawable
 class Chunk : public Drawable {
 private:
     // All of the blocks contained within this Chunk
@@ -59,7 +58,7 @@ public:
     BlockType getBlockAt(int x, int y, int z) const;
     void setBlockAt(unsigned int x, unsigned int y, unsigned int z, BlockType t);
     void linkNeighbor(uPtr<Chunk>& neighbor, Direction dir);
-    void buildInterleavedVBOFromData(std::vector<float> vertexData, std::vector<GLuint> idxData);
+    void buildInterleavedVBOFromData(std::vector<GLfloat>& vertexData, std::vector<GLuint> &idxData);
 
     // Drawable interface
 public:

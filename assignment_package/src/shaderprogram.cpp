@@ -235,6 +235,40 @@ void ShaderProgram::drawInstanced(InstancedDrawable &d)
 
 }
 
+// expect interleaved vertex data to be in format:
+// { pos (4 floats), nor (4 floats), col (4 floats) }
+void ShaderProgram::drawInterleaved(Drawable &d)
+{
+    useMe();
+
+    if (d.bindInterleaved()) {
+
+        if (attrPos != -1) {
+            context->glEnableVertexAttribArray(attrPos);
+            context->glVertexAttribPointer(attrPos, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)0);
+        }
+
+        if (attrNor != -1) {
+            context->glEnableVertexAttribArray(attrNor);
+            context->glVertexAttribPointer(attrNor, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 4));
+        }
+
+        if (attrCol != -1) {
+            context->glEnableVertexAttribArray(attrCol);
+            context->glVertexAttribPointer(attrCol, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 8));
+        }
+    }
+
+    d.bindIdx();
+    context->glDrawElements(d.drawMode(), d.elemCount(), GL_UNSIGNED_INT, 0);
+
+    if (attrPos != -1) context->glDisableVertexAttribArray(attrPos);
+    if (attrNor != -1) context->glDisableVertexAttribArray(attrNor);
+    if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
+
+    context->printGLErrorLog();
+}
+
 char* ShaderProgram::textFileRead(const char* fileName) {
     char* text;
 

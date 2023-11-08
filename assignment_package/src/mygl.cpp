@@ -72,7 +72,7 @@ void MyGL::initializeGL()
 
     m_terrain.CreateTestScene();
 
-    // todo: m_terrain.buildVBOData() or something to initialize the first chunks in the world.
+    // TODO: m_terrain.buildVBOData() or something to initialize the first chunks in the world.
     //       buildVBOData() should also be called (for a specific chunk?) when the player modifies
     //       terrain data.
 }
@@ -137,7 +137,7 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
-    m_terrain.draw(0, 64, 0, 64, &m_progInstanced);
+    m_terrain.draw(0, 64, 0, 64, &m_progFlat);
 }
 
 
