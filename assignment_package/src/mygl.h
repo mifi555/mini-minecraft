@@ -29,6 +29,8 @@ private:
     Player m_player; // The entity controlled by the user. Contains a camera to display what it sees as well.
     InputBundle m_inputs; // A collection of variables to be updated in keyPressEvent, mouseMoveEvent, mousePressEvent, etc.
 
+    qint64 m_currMSecSinceEpoch;
+
     QTimer m_timer; // Timer linked to tick(). Fires approximately 60 times per second.
 
     void moveMouseToCenter(); // Forces the mouse position to the screen's center. You should call this
@@ -67,6 +69,8 @@ protected:
     // Automatically invoked when the user
     // presses a mouse button
     void mousePressEvent(QMouseEvent *e);
+
+    void keyReleaseEvent(QKeyEvent *e);
 
 private slots:
     void tick(); // Slot that gets called ~60 times per second by m_timer firing.

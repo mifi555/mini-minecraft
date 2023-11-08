@@ -3,12 +3,18 @@
 
 struct InputBundle {
     bool wPressed, aPressed, sPressed, dPressed;
+    bool ePressed, qPressed, fPressed;
     bool spacePressed;
-    float mouseX, mouseY;
+    float mouseX, mouseY, mouseXpreviousPos, mouseYpreviousPos;
+
+    //flags for flight and ground mode
+    bool flight, ground;
 
     InputBundle()
         : wPressed(false), aPressed(false), sPressed(false),
-          dPressed(false), spacePressed(false), mouseX(0.f), mouseY(0.f)
+        dPressed(false), ePressed(false), qPressed(false), fPressed(false), spacePressed(false), mouseX(0.f), mouseY(0.f),
+        mouseXpreviousPos(0.f), mouseYpreviousPos(0.f),
+        flight(true), ground(true)
     {}
 };
 

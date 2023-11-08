@@ -20,5 +20,7 @@ public:
 
     void tick(float dT, InputBundle &input) override;
 
+    void setRotation(glm::mat3 rotationMatrix);
+
     glm::mat4 getViewProj() const;
 };
