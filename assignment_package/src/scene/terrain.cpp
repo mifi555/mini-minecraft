@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <iostream>
 
+bool started = false;
+
 Terrain::Terrain(OpenGLContext *context)
     : m_chunks(), m_generatedTerrain(), m_geomCube(context), mp_context(context)
 {}
@@ -185,6 +187,44 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
 
     m_geomCube.createInstancedVBOdata(offsets, colors);
     shaderProgram->drawInstanced(m_geomCube);
+
+//    int lows = 0;
+//    float low = 500;
+//    int highs = 0;
+//    float high = 0;
+//    if (started == false) {
+//        started = true;
+//        for(int x = minX; x < maxX; x += 16) {
+//            for(int z = minZ; z < maxZ; z += 16) {
+//                for(int i = 0; i < 16; ++i) {
+//                    for(int j = 0; j < 256; ++j) {
+//                        for(int k = 0; k < 16; ++k) {
+//                            float mH = mountainsYValue(glm::vec2(i, k), glm::vec3(i+x, j, k+z));
+//                            float gH = grasslandsYValue(glm::vec2(i, k), glm::vec3(i+x, j, k+z));
+//                            float t = biomeBlender(glm::vec2(i+x, k+z));
+//                            t = glm::smoothstep(0.4f, 0.6f, t);
+//                            float h = glm::mix(mH, gH, t);
+
+//                            if (h <= 150.f) {
+//                                lows = lows + 1;
+//                                if (h < low) {
+//                                    low = h;
+//                                }
+//                            } else {
+//                                highs = highs + 1;
+//                                if (h > high) {
+//                                    high = h;
+//                                }
+//                            }
+////                            std::cout << mountainsYValue(glm::vec2(i, k), glm::vec3(i+x, j, k+z)) << std::endl;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        std::cout << "Low: " << low << "   High: " << high << std::endl;
+//    }
+
 }
 
 void Terrain::CreateTestScene()
@@ -227,4 +267,187 @@ void Terrain::CreateTestScene()
     for(int y = 129; y < 140; ++y) {
         setBlockAt(32, y, 32, GRASS);
     }
+}
+
+// Various noise functions used for terrain biome generation.
+glm::vec2 Terrain::smoothF(glm::vec2 coords) {
+    return coords * coords * (3.f - 2.f * coords);
+}
+
+float Terrain::noise(glm::vec2 coords) {
+    const float k = 257.;
+    glm::vec4 l  = glm::vec4(glm::floor(coords), glm::fract(coords));
+    float u = l.x + l.y * k;
+    glm::vec4 v  = glm::vec4(u, u + 1.f, u + k, u + k + 1.f);
+    glm::vec2 newZW;
+
+    v = glm::fract(glm::fract(float(1.23456789) * v) * v / float(0.987654321));
+    newZW = smoothF(glm::vec2(l.z, l.w));
+    l.z = newZW[0];
+    l.w = newZW[1];
+    l.x = glm::mix(v.x, v.y, l.z);
+    l.y = glm::mix(v.z, v.w, l.z);
+
+    return glm::mix(l.x, l.y, l.w);
+}
+
+float Terrain::fbm(glm::vec2 coords) {
+    float a = 0.5;
+    float f = 5.0;
+    float n = 0.f;
+    int it = 8;
+
+    for(int i = 0; i < 32; i++)
+    {
+        if(i<it)
+        {
+            n += noise(coords * f) * a;
+            a *= .5;
+            f *= 2.;
+        }
+    }
+
+    return n;
+}
+
+glm::vec2 Terrain::random2(glm::vec2 coords) {
+    return glm::normalize(2.f * glm::fract(glm::sin(glm::vec2(glm::dot(coords, glm::vec2(127.1,311.7)), glm::dot(coords, glm::vec2(269.5,183.3)))) * float(43758.5453)) - 1.f);
+}
+
+float Terrain::surflet(glm::vec2 point, glm::vec2 gridPoint) {
+    // Compute falloff function by converting linear distance to a polynomial (quintic smootherstep function)
+    float distX = abs(point.x - gridPoint.x);
+    float distY = abs(point.y - gridPoint.y);
+    float tX = 1 - 6 * pow(distX, 5.0) + 15 * pow(distX, 4.0) - 10 * pow(distX, 3.0);
+    float tY = 1 - 6 * pow(distY, 5.0) + 15 * pow(distY, 4.0) - 10 * pow(distY, 3.0);
+
+    // Get the random vector for the grid point
+    glm::vec2 gradient = random2(gridPoint);
+    // Get the vector from the grid point to P
+    glm::vec2 diff = point - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = glm::dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+    return height * tX * tY;
+}
+
+float Terrain::perlinNoise(glm::vec2 coords) {
+    // Tile the space
+    glm::vec2 coordsXLYL = glm::floor(coords);
+    glm::vec2 coordsXHYL = coordsXLYL + glm::vec2(1,0);
+    glm::vec2 coordsXHYH = coordsXLYL + glm::vec2(1,1);
+    glm::vec2 coordsXLYH = coordsXLYL + glm::vec2(0,1);
+
+    return surflet(coords, coordsXLYL) + surflet(coords, coordsXHYL) + surflet(coords, coordsXHYH) + surflet(coords, coordsXLYH);
+}
+
+float Terrain::worleyNoise(glm::vec2 coords) {
+    // Tile the space
+    //    uv = uv + fbm2(uv / 4) * 5.f;
+    glm::vec2 coordInt = glm::floor(coords);
+    glm::vec2 coordFract = glm::fract(coords);
+    float minDist = 1.0; // Minimum distance initialized to max.
+    float secondMinDist = 1.0;
+    glm::vec2 closestPoint;
+
+    // Search all neighboring cells and this cell for their point
+    for(int y = -1; y <= 1; y++)
+    {
+        for(int x = -1; x <= 1; x++)
+        {
+            glm::vec2 neighbor = glm::vec2(float(x), float(y));
+
+            // Random point inside current neighboring cell
+            glm::vec2 point = random2(coordInt + neighbor);
+
+            // Compute the distance b/t the point and the fragment
+            // Store the min dist thus far
+            glm::vec2 diff = neighbor + point - coordFract;
+            float dist = glm::length(diff);
+
+            if(dist < minDist) {
+                secondMinDist = minDist;
+                minDist = dist;
+                closestPoint = point;
+            }
+            else if(dist < secondMinDist) {
+                secondMinDist = dist;
+            }
+        }
+    }
+
+    float height = 0.5 * minDist + 0.5 * secondMinDist;
+    height = glm::length(closestPoint);
+    //    height = height * height;
+    return height;
+}
+
+float Terrain::grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
+    //// Remove this offsetPos if unnecessary.
+    ///
+    glm::vec4 offsetPos = glm::vec4(coords[0], 1, coords[1], 1) + glm::vec4(offsetInstanced, 0);
+    glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
+    float h = 0, amp = 0.5, freq = 128, yValue = 1;
+
+        for(int i = 0; i < 4; ++i) {
+            glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
+            float h1 = (perlinNoise((xz + offset * 25.f) / freq) * perlinNoise((xz + offset * 25.f) / freq));
+    //        h1 = 1. - abs(h1);
+    //        h1 = pow(h1, 1.5);
+            h += h1 * amp;
+
+            amp *= 0.5;
+            freq *= 0.5;
+        }
+
+    offsetPos.y *= floor(128 + h * 200);
+    yValue = floor(125 + h * 200);
+
+    // Enforce min/max bounds.
+    if (yValue < 129.f) {
+        yValue = 129.f;
+    } else if (yValue > 150.f) {
+        yValue = 150.f;
+    }
+
+    return yValue;
+}
+
+float Terrain::mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
+    //// Remove this offsetPos if unnecessary.
+    ///
+    glm::vec4 offsetPos = glm::vec4(coords[0], 1, coords[1], 1) + glm::vec4(offsetInstanced, 0);
+    glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
+    float h = 0, amp = 0.5, freq = 128, yValue = 1;
+
+    for(int i = 0; i < 4; ++i) {
+        glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
+        float h1 = sin(perlinNoise((xz + offset * 30.f) / freq)) * offset[0] * offset[1] * 0.005;
+        //        h1 = 1. - abs(h1);
+        //        h1 = pow(h1, 1.5);
+        h += h1 * amp;
+
+        amp *= 0.5;
+        freq *= 0.5;
+    }
+
+    offsetPos.y *= floor(180 + h * 200);
+    yValue = floor((197 + h * 160));
+
+//    // Enforce min/max bounds.
+//    if (yValue < 129.f) {
+//        yValue = yValue + 22.f;
+
+//        if (yValue < 129.f) {
+//            yValue = 129.f;
+//        }
+//    } else if (yValue > 255.f) {
+//        yValue = 250.f;
+//    }
+
+    return yValue;
+}
+
+float Terrain::biomeBlender(glm::vec2 coords) {
+    return 0.5 * (perlinNoise(coords / 512.f) + 1.f);
 }

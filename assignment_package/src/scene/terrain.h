@@ -88,4 +88,16 @@ public:
     // Initializes the Chunks that store the 64 x 256 x 64 block scene you
     // see when the base code is run.
     void CreateTestScene();
+
+    // Various noise functions and helpers used for terrain biome generation.
+    glm::vec2 smoothF(glm::vec2 coords);
+    float noise(glm::vec2 coords);
+    float fbm(glm::vec2 coords);
+    glm::vec2 random2(glm::vec2 coords);
+    float surflet(glm::vec2 point, glm::vec2 gridPoint);
+    float perlinNoise(glm::vec2 coords);
+    float worleyNoise(glm::vec2 coords);
+    float grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced);
+    float mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced);
+    float biomeBlender(glm::vec2 coords);
 };
