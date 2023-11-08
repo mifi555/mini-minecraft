@@ -187,44 +187,6 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
 
     m_geomCube.createInstancedVBOdata(offsets, colors);
     shaderProgram->drawInstanced(m_geomCube);
-
-//    int lows = 0;
-//    float low = 500;
-//    int highs = 0;
-//    float high = 0;
-//    if (started == false) {
-//        started = true;
-//        for(int x = minX; x < maxX; x += 16) {
-//            for(int z = minZ; z < maxZ; z += 16) {
-//                for(int i = 0; i < 16; ++i) {
-//                    for(int j = 0; j < 256; ++j) {
-//                        for(int k = 0; k < 16; ++k) {
-//                            float mH = mountainsYValue(glm::vec2(i, k), glm::vec3(i+x, j, k+z));
-//                            float gH = grasslandsYValue(glm::vec2(i, k), glm::vec3(i+x, j, k+z));
-//                            float t = biomeBlender(glm::vec2(i+x, k+z));
-//                            t = glm::smoothstep(0.4f, 0.6f, t);
-//                            float h = glm::mix(mH, gH, t);
-
-//                            if (h <= 150.f) {
-//                                lows = lows + 1;
-//                                if (h < low) {
-//                                    low = h;
-//                                }
-//                            } else {
-//                                highs = highs + 1;
-//                                if (h > high) {
-//                                    high = h;
-//                                }
-//                            }
-////                            std::cout << mountainsYValue(glm::vec2(i, k), glm::vec3(i+x, j, k+z)) << std::endl;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        std::cout << "Low: " << low << "   High: " << high << std::endl;
-//    }
-
 }
 
 void Terrain::CreateTestScene()
@@ -343,7 +305,6 @@ float Terrain::perlinNoise(glm::vec2 coords) {
 
 float Terrain::worleyNoise(glm::vec2 coords) {
     // Tile the space
-    //    uv = uv + fbm2(uv / 4) * 5.f;
     glm::vec2 coordInt = glm::floor(coords);
     glm::vec2 coordFract = glm::fract(coords);
     float minDist = 1.0; // Minimum distance initialized to max.
@@ -378,7 +339,7 @@ float Terrain::worleyNoise(glm::vec2 coords) {
 
     float height = 0.5 * minDist + 0.5 * secondMinDist;
     height = glm::length(closestPoint);
-    //    height = height * height;
+
     return height;
 }
 
@@ -389,16 +350,14 @@ float Terrain::grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
     glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
     float h = 0, amp = 0.5, freq = 128, yValue = 1;
 
-        for(int i = 0; i < 4; ++i) {
-            glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
-            float h1 = (perlinNoise((xz + offset * 25.f) / freq) * perlinNoise((xz + offset * 25.f) / freq));
-    //        h1 = 1. - abs(h1);
-    //        h1 = pow(h1, 1.5);
-            h += h1 * amp;
+    for(int i = 0; i < 4; ++i) {
+        glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
+        float h1 = (perlinNoise((xz + offset * 25.f) / freq) * perlinNoise((xz + offset * 25.f) / freq));
 
-            amp *= 0.5;
-            freq *= 0.5;
-        }
+        h += h1 * amp;
+        amp *= 0.5;
+        freq *= 0.5;
+    }
 
     offsetPos.y *= floor(128 + h * 200);
     yValue = floor(125 + h * 200);
@@ -423,27 +382,14 @@ float Terrain::mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
     for(int i = 0; i < 4; ++i) {
         glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
         float h1 = sin(perlinNoise((xz + offset * 30.f) / freq)) * offset[0] * offset[1] * 0.005;
-        //        h1 = 1. - abs(h1);
-        //        h1 = pow(h1, 1.5);
-        h += h1 * amp;
 
+        h += h1 * amp;
         amp *= 0.5;
         freq *= 0.5;
     }
 
     offsetPos.y *= floor(180 + h * 200);
     yValue = floor((197 + h * 160));
-
-//    // Enforce min/max bounds.
-//    if (yValue < 129.f) {
-//        yValue = yValue + 22.f;
-
-//        if (yValue < 129.f) {
-//            yValue = 129.f;
-//        }
-//    } else if (yValue > 255.f) {
-//        yValue = 250.f;
-//    }
 
     return yValue;
 }
