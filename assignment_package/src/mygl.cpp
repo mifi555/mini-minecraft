@@ -167,9 +167,16 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
     //if (!e->isAutoRepeat()) {
     if (e->key() == Qt::Key_Escape) {
         QApplication::quit();
+    } else if (e->key() == Qt::Key_Right) {
+        m_player.rotateOnUpGlobal(-amount);
+    } else if (e->key() == Qt::Key_Left) {
+        m_player.rotateOnUpGlobal(amount);
+    } else if (e->key() == Qt::Key_Up) {
+        m_player.rotateOnRightLocal(-amount);
+    } else if (e->key() == Qt::Key_Down) {
+        m_player.rotateOnRightLocal(amount);
     } else if (e->key() == Qt::Key_W) {
         m_inputs.wPressed = true;
-
     } else if (e->key() == Qt::Key_S) {
         m_inputs.sPressed = true;
 
@@ -194,8 +201,7 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
         if (e->key() == Qt::Key_Space) {
             m_inputs.spacePressed = true;
         }
-    //}
-}
+    }
 }
 
 //Key Release Event
@@ -223,6 +229,7 @@ if (!e->isAutoRepeat()) {
 //
 
 void MyGL::mouseMoveEvent(QMouseEvent *e) {
+#if 0
     // TODO
 
 //    // Move the mouse back to the center to avoid hitting screen edges.
@@ -261,7 +268,7 @@ void MyGL::mouseMoveEvent(QMouseEvent *e) {
     m_player.rotateOnUpGlobal(-dX * sensitivity);
 
     moveMouseToCenter();
-
+#endif
 }
 
 void MyGL::mousePressEvent(QMouseEvent *e) {

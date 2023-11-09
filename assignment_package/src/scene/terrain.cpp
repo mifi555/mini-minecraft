@@ -190,7 +190,6 @@ void Terrain::CreateTestScene()
         setBlockAt(0, 130, x, GRASS);
     }
 #endif
-
     // Add a central column
     for(int y = 129; y < 140; ++y) {
         setBlockAt(32, y, 32, GRASS);
