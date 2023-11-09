@@ -65,4 +65,7 @@ public:
 public:
     void createVBOdata() override;
     GLenum drawMode() override { return GL_TRIANGLES; }
+    std::unordered_map<Direction, Chunk *, EnumHash>& neighbors();
+    int getMinX() const;
+    int getMinZ() const;
 };

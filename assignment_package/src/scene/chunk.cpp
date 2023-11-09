@@ -2,6 +2,21 @@
 #include <array>
 #include "chunkconstants.h"
 
+std::unordered_map<Direction, Chunk *, EnumHash>& Chunk::neighbors()
+{
+    return m_neighbors;
+}
+
+int Chunk::getMinX() const
+{
+    return minX;
+}
+
+int Chunk::getMinZ() const
+{
+    return minZ;
+}
+
 Chunk::Chunk(OpenGLContext* context, int x, int z)
     : Drawable(context),
     m_blocks(),

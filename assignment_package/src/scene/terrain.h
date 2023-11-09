@@ -54,9 +54,14 @@ private:
 
     OpenGLContext* mp_context;
 
+    void generateChunkTerrain(Chunk *chunk);
 public:
     Terrain(OpenGLContext *context);
     ~Terrain();
+
+    // given a chunk at x / z, generate it's neighbouring chunks if they are
+    // not already empty
+    void generateChunksInProximity(int x, int z);
 
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
