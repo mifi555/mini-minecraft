@@ -7,8 +7,6 @@
 
 #include <qdatetime.h>
 
-
-
 MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
@@ -107,10 +105,22 @@ void MyGL::tick() {
     m_player.tick(dT, m_inputs);
     m_currMSecSinceEpoch = QDateTime::currentMSecsSinceEpoch();
 
+    glm::ivec2 chunk = playerCurrentChunk();
+    m_terrain.generateChunksInProximity(chunk.x, chunk.y);
+
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data
 }
 
+glm::ivec2 MyGL::playerCurrentChunk() {
+    glm::vec2 pPos(m_player.mcr_position.x, m_player.mcr_position.z);
+    return glm::ivec2(16 * glm::ivec2(glm::floor(pPos / 16.f)));
+}
+
+glm::ivec2 MyGL::playerCurrentZone() {
+    glm::vec2 pPos(m_player.mcr_position.x, m_player.mcr_position.z);
+    return glm::ivec2(64 * glm::ivec2(glm::floor(pPos / 64.f)));
+}
 
 //provided
 void MyGL::sendPlayerDataToGUI() const {
@@ -149,7 +159,7 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
-    m_terrain.draw(0, 64, 0, 64, &m_progLambert);
+    m_terrain.draw(-256, 256, -256, 256, &m_progLambert);
 }
 
 void MyGL::keyPressEvent(QKeyEvent *e) {
