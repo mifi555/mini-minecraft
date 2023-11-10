@@ -61,8 +61,8 @@ _Difficulties_
 _Efficient Rendering of Chunks_
 
 - Instanced rendering of the `Cube` Drawable was replaced with a more efficient rendering of Chunks, which now inherits from `Drawable` as well
-- One chunk is considered one “mesh” and only visible block faces are drawn (i.e. block faces that neighbor `EMPTY` blocks). This is implemented in `createVBOdata()` function override
-`chunkconstants.h` was created to keep `createVBOData` code concise and easier to read, and holds various hardcoded data such as face positions, normals and colors. 
+- One chunk is considered one “mesh” and only visible block faces are drawn (i.e. block faces that neighbor `EMPTY` blocks). This is implemented in `Chunk::createVBOdata()` function override
+- `chunkconstants.h` was created to keep `Chunk::createVBOData` code concise and easier to read, and holds various hardcoded data such as face positions, normals and colors. 
 
 _Interleaved VBO for vertex data_
 
