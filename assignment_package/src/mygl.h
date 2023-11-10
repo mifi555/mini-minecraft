@@ -31,6 +31,8 @@ private:
 
     qint64 m_currMSecSinceEpoch;
 
+    BlockType m_blockType;
+
     QTimer m_timer; // Timer linked to tick(). Fires approximately 60 times per second.
 
     void moveMouseToCenter(); // Forces the mouse position to the screen's center. You should call this
@@ -60,6 +62,8 @@ public:
     // Called from paintGL().
     // Calls Terrain::draw().
     void renderTerrain();
+
+    friend class Entity;
 protected:
     // Automatically invoked when the user
     // presses a key on the keyboard

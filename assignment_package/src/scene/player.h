@@ -11,7 +11,12 @@ private:
     glm::vec3 m_velocity, m_acceleration;
     Camera m_camera;
     const Terrain &mcr_terrain;
+
+    //boolean flag to indicate if the player has jumped or not
     bool m_hasJumped;
+
+    //for block placement
+    float m_interfaceAxis;
 
     void processInputs(const Terrain &terrain, InputBundle &inputs);
     void computePhysics(float dT, const Terrain &terrain, InputBundle &input);
@@ -22,9 +27,8 @@ public:
     // for easy access from MyGL
     const Camera& mcr_camera;
 
+    //boolean flag for flightmode
     bool m_flightMode;
-    float phi;
-    float theta;
 
     Player(glm::vec3 pos, const Terrain &terrain);
     virtual ~Player() override;
@@ -34,13 +38,24 @@ public:
     void tick(float dT, InputBundle &input) override;
 
     //**
+
+    //check if player is currently touching the ground
     bool playerOnGround(const Terrain &terrain, InputBundle &input);
 
+    //check for collision with blocks
     void collision(const Terrain &terrain, glm::vec3 *rayDir);
 
+    //gird march for collision
     bool gridMarch(glm::vec3 rayOrigin, glm::vec3 rayDirection, const Terrain &terrain, float *out_dist, glm::ivec3 *out_blockHit);
 
+    //toggle flight mode ON/OFF
     void toggleFlightMode();
+
+    //remove block that the player is currently facing
+    void removeBlock(Terrain *terrain);
+
+    //place block adjacent to the block the player is facing
+    void placeBlock(Terrain *terrain, BlockType blockType);
 
     //**
 
