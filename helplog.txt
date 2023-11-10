@@ -5,3 +5,13 @@ Milan
 
 
 Joseph
+
+11/6 3:50 and 4:34PM - Got feedback and clarifications / guidance from Professor Adam and Jackie on terrain implementation steps and current noise function outputs.
+
+11/7 10:49AM - Got help from Nick with some block order clarifications.
+
+11/8 4:14PM - Got help from Dineth with clarifying questions and next steps for integrating procedural terrain with the chunking portion of the assignment.
+
+11/9 5:35PM - Got help / feedback from Jackie on biome style and noise functions.
+
+11/10 11:44AM - Got feedback from Insha on terrain presentation.

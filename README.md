@@ -38,3 +38,20 @@ _Block Interaction_
 - Remove blocks with left-click (within 3 units of the camera) by casting out a ray using grid march and setting the selected block as an EMPTY block
 - Place blocks with right-click adjacent to the targeted block face: by casting out a ray and using grid march, check on which axes the block lies on and calculate position adjacent to the face of the block hit to place a block
 - difficulties with placing blocks on some points in the terrain
+
+**Joseph - Procedural Terrain**
+
+_Grassland and Mountain Biome Noise Functions_
+_I began by testing different implementations of FBM and Perlin Noise in the instanced vertex shader. 
+_From there I created functions for both the grassland and mountain biomes and requested feedback from my team, Professor Adam, and Jackie before moving on to the interpolation step.
+
+_Biome Interpolation Noise Function_
+_To interpolate between the biomes, I created a Perlin Noise based t-value equal to 0.5 * (perlinNoise(xz / 512.f) + 1.f), used smoothstep(0.55, 0.45, t) on it, and then mixed the values with (grassH, mountainsH, t) respectively to determine the final height value. 
+_This resulted in mountains being taller and in a more concentrated area rather than scattered throughout the map.
+
+_C++ Implementation of Noise Functions and Biome Block Layering_
+_After translating the GLSL code from the vertex shader to C++ in terrain.cpp, I added a SNOW block type and assigned the proper block types and colors to their specified biomes and heights in generateChunkTerrain().
+
+_Difficulties_
+_The most challenging portion of this assignment was creating noise functions that looked natural and aesthetically appealing while remaining in the bounds [0, 255] throughout their oscillation cycle. 
+_I had to scrap noise functions that didn't translate well to our overall implementation and continuously test and augment each function prior to our final submission.
