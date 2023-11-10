@@ -109,7 +109,7 @@ public:
 
     // terrain generators
 
-    float grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced);
-    float mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced);
+    float grasslandsYValue(glm::vec2 coords);
+    float mountainsYValue(glm::vec2 coords);
     float biomeBlender(glm::vec2 coords);
 };
