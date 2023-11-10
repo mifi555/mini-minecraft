@@ -5,8 +5,11 @@ No help was needed
 
 Milan
 -----
+11/06 4:00PM Got guidance on collision detection, block placement + raycasting
 
-No help was needed 
+11/08 4:30PM After class office hours: received help from Dineth in terms of implementing the camera
+
+11/09 12:00PM Resolved issues for block collision during office hours.
 
 Joseph
 -------
