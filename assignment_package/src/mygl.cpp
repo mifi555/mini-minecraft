@@ -7,6 +7,11 @@
 
 #include <qdatetime.h>
 
+// set one of these to 1 to enable the demo for each milestone feature
+#define PHYSICS_DEMO 0
+#define CHUNKING_DEMO 1
+#define TERRAIN_DEMO 0
+
 MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
@@ -72,11 +77,14 @@ void MyGL::initializeGL()
     // using multiple VAOs, we can just bind one once.
     glBindVertexArray(vao);
 
+#if CHUNKING_DEMO
+    m_terrain.CreateTestSceneChunking();
+#elif PHYSICS_DEMO
+    m_terrain.CreateTestScene();
+#elif TERRAIN_DEMO
     m_terrain.CreateTestSceneProceduralTerrain();
+#endif
 
-    // TODO: m_terrain.buildVBOData() or something to initialize the first chunks in the world.
-    //       buildVBOData() should also be called (for a specific chunk?) when the player modifies
-    //       terrain data.
 }
 
 void MyGL::resizeGL(int w, int h) {
@@ -105,8 +113,10 @@ void MyGL::tick() {
     m_player.tick(dT, m_inputs);
     m_currMSecSinceEpoch = QDateTime::currentMSecsSinceEpoch();
 
+#if !PHYSICS_DEMO
     glm::ivec2 chunk = playerCurrentChunk();
     m_terrain.generateChunksInProximity(chunk.x, chunk.y);
+#endif
 
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data

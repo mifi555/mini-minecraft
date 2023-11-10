@@ -197,10 +197,14 @@ void Terrain::generateChunkTerrain(Chunk* chunk) {
     chunk->createVBOdata();
 }
 
-Chunk* Terrain::instantiateChunkAt(int x, int z) {
+Chunk* Terrain::instantiateChunkAt(int x, int z, bool isEmpty) {
     uPtr<Chunk> chunk = mkU<Chunk>(this->mp_context, x, z);
     Chunk *cPtr = chunk.get();
-    generateChunkTerrain(cPtr);
+
+    if (not isEmpty) {
+        generateChunkTerrain(cPtr);
+    }
+
     m_chunks[toKey(x, z)] = std::move(chunk);
     // Set the neighbor pointers of itself and its neighbors
     if(hasChunkAt(x, z + 16)) {
@@ -236,7 +240,7 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
     }
 }
 
-// TODO: delete me
+
 void Terrain::CreateTestScene()
 {
     // TODO: DELETE THIS LINE WHEN YOU DELETE m_geomCube!
@@ -249,7 +253,7 @@ void Terrain::CreateTestScene()
     // initial world space
     for(int x = 0; x < 64; x += 16) {
         for(int z = 0; z < 64; z += 16) {
-            Chunk* c = instantiateChunkAt(x, z);
+            Chunk* c = instantiateChunkAt(x, z, true);
             chunks.push_back(c);
         }
     }
@@ -258,7 +262,7 @@ void Terrain::CreateTestScene()
     // now exists.
     m_generatedTerrain.insert(toKey(0, 0));
 
-#if 1
+
     // Create the basic terrain floor
     for(int x = 0; x < 64; ++x) {
         for(int z = 0; z < 64; ++z) {
@@ -277,7 +281,7 @@ void Terrain::CreateTestScene()
         setBlockAt(x, 129, 63, GRASS);
         setBlockAt(0, 130, x, GRASS);
     }
-#endif
+
     // Add a central column
     for(int y = 129; y < 140; ++y) {
         setBlockAt(32, y, 32, GRASS);
@@ -289,13 +293,30 @@ void Terrain::CreateTestScene()
     }
 }
 
+void Terrain::CreateTestSceneChunking()
+{
+    // Create the Chunks that will
+    // store the blocks for our
+    // initial world space
+    for(int x = 0; x < 64; x += 16) {
+        for(int z = 0; z < 64; z += 16) {
+            instantiateChunkAt(x, z);
+        }
+    }
+    // Tell our existing terrain set that
+    // the "generated terrain zone" at (0,0)
+    // now exists.
+    // TODO: ^^^ what the fuck does this mean
+    m_generatedTerrain.insert(toKey(0, 0));
+}
+
 void Terrain::CreateTestSceneProceduralTerrain()
 {
     // Create the Chunks that will
     // store the blocks for our
     // initial world space
-    for(int x = 0; x < 256; x += 16) {
-        for(int z = 0; z < 256; z += 16) {
+    for(int x = -256; x < 256; x += 16) {
+        for(int z = -256; z < 256; z += 16) {
             instantiateChunkAt(x, z);
         }
     }

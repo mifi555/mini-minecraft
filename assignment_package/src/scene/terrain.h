@@ -66,7 +66,7 @@ public:
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
     // Returns a pointer to the created Chunk.
-    Chunk* instantiateChunkAt(int x, int z);
+    Chunk* instantiateChunkAt(int x, int z, bool isEmpty = false);
     // Do these world-space coordinates lie within
     // a Chunk that exists?
     bool hasChunkAt(int x, int z) const;
@@ -97,6 +97,9 @@ public:
     // initialize chunks with procedural terrain
     void CreateTestSceneProceduralTerrain();
 
+    // initialize a small 64 x 64 terrain to showcase chunking generation
+    void CreateTestSceneChunking();
+
     // Various noise functions and helpers used for terrain biome generation.
 
     glm::vec2 smoothF(glm::vec2 coords);
@@ -112,4 +115,5 @@ public:
     float grasslandsYValue(glm::vec2 coords);
     float mountainsYValue(glm::vec2 coords);
     float biomeBlender(glm::vec2 coords);
+
 };
