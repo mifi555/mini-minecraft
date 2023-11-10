@@ -160,18 +160,36 @@ void Terrain::generateChunkTerrain(Chunk* chunk) {
     for (int x = 0; x < 16; x++) {
         for (int z = 0; z < 16; z++) {
 
-            glm::vec3 worldPos = glm::vec3(minX + x, 1., minZ + z);
+            glm::vec2 worldPos = glm::vec2(minX + x, minZ + z);
 
-            float grass = grasslandsYValue(glm::vec2(), worldPos);
-            float mountains = mountainsYValue(glm::vec2(), worldPos);
+            float grass = grasslandsYValue(glm::vec2(worldPos[0], worldPos[1]));
+            float mountains = mountainsYValue(glm::vec2(worldPos[0], worldPos[1]));
             float t = biomeBlender(glm::vec2(minX + x, minZ + z));
-            t = glm::smoothstep(0.6f, 0.4f, t);
-            float yMax = glm::mix(grass, mountains, t);
+            t = glm::smoothstep(0.55f, 0.45f, t);
+            int yMax = glm::mix(grass, mountains, t);
 
-            yMax = glm::clamp(yMax, 0.f, 255.f);
+            yMax = int(glm::clamp(float(yMax), 0.f, 255.f));
 
-            for (int y = 0; y < yMax; y++) {
-                chunk->setBlockAt(x, y, z, GRASS);
+            for (int y = 0; y < yMax + 1; y++) {
+                // Stone layer.
+                if (y <= 128) {
+                    chunk->setBlockAt(x, y, z, STONE);
+                // Water pools.
+                } else if (y > 128 && yMax <= 129 && y == yMax) {
+                    chunk->setBlockAt(x, y, z, WATER);
+                // Dirt layer - grass biome and pools.
+                } else if (y > 128 && yMax <= 150 && y < yMax) {
+                    chunk->setBlockAt(x, y, z, DIRT);
+                // Grass layer.
+                } else if (y > 128 && yMax <= 150 && y == yMax) {
+                    chunk->setBlockAt(x, y, z, GRASS);
+                // Snow layer - mountains biome.
+                } else if (y > 200 && y == yMax) {
+                    chunk->setBlockAt(x, y, z, SNOW);
+                // Mountains layer.
+                } else if (y > 128 && yMax > 150) {
+                    chunk->setBlockAt(x, y, z, STONE);
+                }
             }
         }
     }
@@ -395,19 +413,16 @@ float Terrain::worleyNoise(glm::vec2 coords) {
         }
     }
 
-    float height = 0.5 * minDist + 0.5 * secondMinDist;
-    height = glm::length(closestPoint);
+    float height = glm::length(closestPoint);
 
     return height;
 }
 
-float Terrain::grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
-    //// Remove this offsetPos if unnecessary.
-    ///
-    glm::vec4 offsetPos = glm::vec4(coords[0], 1, coords[1], 1) + glm::vec4(offsetInstanced, 0);
-    glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
+float Terrain::grasslandsYValue(glm::vec2 coords) {
+    glm::vec2 xz = glm::vec2(coords[0], coords[1]);
     float h = 0, amp = 0.5, freq = 128, yValue = 1;
 
+    // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
         glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
         float h1 = (perlinNoise((xz + offset * 25.f) / freq) * perlinNoise((xz + offset * 25.f) / freq));
@@ -417,37 +432,32 @@ float Terrain::grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
         freq *= 0.5;
     }
 
-    offsetPos.y *= floor(128 + h * 200);
     yValue = floor(125 + h * 200);
 
-    // Enforce min/max bounds.
-    if (yValue < 129.f) {
-        yValue = 129.f;
-    } else if (yValue > 150.f) {
-        yValue = 150.f;
-    }
+    // Enforce height bounds.
+    yValue = glm::clamp(yValue, 129.f, 150.f);
 
     return yValue;
 }
 
-float Terrain::mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
-    //// Remove this offsetPos if unnecessary.
-    ///
-    glm::vec4 offsetPos = glm::vec4(coords[0], 1, coords[1], 1) + glm::vec4(offsetInstanced, 0);
-    glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
+float Terrain::mountainsYValue(glm::vec2 coords) {
+    glm::vec2 xz = glm::vec2(coords[0], coords[1]);
     float h = 0, amp = 0.5, freq = 128, yValue = 1;
 
+    // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
         glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
-        float h1 = sin(perlinNoise((xz + offset * 30.f) / freq)) * offset[0] * offset[1] * 0.005;
+        float h1 = sin(perlinNoise((xz + offset * 45.f) / freq)) * perlinNoise((xz + offset * 45.f) / freq) * 5;
 
         h += h1 * amp;
         amp *= 0.5;
         freq *= 0.5;
     }
 
-    offsetPos.y *= floor(180 + h * 200);
-    yValue = floor((197 + h * 160));
+    yValue = floor((151 + h * 160));
+
+    // Enforce height bounds.
+    yValue = glm::clamp(yValue, 151.f, 255.f);
 
     return yValue;
 }
