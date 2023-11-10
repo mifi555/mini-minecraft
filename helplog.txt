@@ -1,10 +1,15 @@
 Michael
+-------
 
+No help was needed 
 
 Milan
+-----
 
+No help was needed 
 
 Joseph
+-------
 
 11/6 3:50 and 4:34PM - Got feedback and clarifications / guidance from Professor Adam and Jackie on terrain implementation steps and current noise function outputs.
 
