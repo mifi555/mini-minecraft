@@ -41,7 +41,9 @@ private:
 
     void sendPlayerDataToGUI() const;
 
-
+    // helper functions
+    glm::ivec2 playerCurrentChunk();
+    glm::ivec2 playerCurrentZone();
 public:
     explicit MyGL(QWidget *parent = nullptr);
     ~MyGL();
@@ -62,7 +64,6 @@ public:
     void renderTerrain();
 
     friend class Entity;
-
 protected:
     // Automatically invoked when the user
     // presses a key on the keyboard

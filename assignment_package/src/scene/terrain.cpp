@@ -5,13 +5,49 @@
 
 bool started = false;
 
+// TODO: might go into some sort of constants file
+
+namespace TerrainConstants {
+    static const std::unordered_map<Direction, glm::ivec2, EnumHash> offsets = {
+            { XPOS, glm::ivec2(16, 0) },
+            { XNEG, glm::ivec2(-16, 0) },
+            { ZPOS, glm::ivec2(0, 16) },
+            { ZNEG, glm::ivec2(0, -16) }
+    };
+}
+
 Terrain::Terrain(OpenGLContext *context)
-    : m_chunks(), m_generatedTerrain(), m_geomCube(context), mp_context(context)
+    : m_chunks(),
+    m_generatedTerrain(),
+    m_geomCube(context),
+    mp_context(context)
 {}
 
 Terrain::~Terrain() {
     m_geomCube.destroyVBOdata();
 }
+
+// generates neighbouring chunks in all directions of specified chunk
+void Terrain::generateChunksInProximity(int x, int z)
+{
+    if (this->hasChunkAt(x, z)) {
+        uPtr<Chunk>& current = this->getChunkAt(x, z);
+        auto neighbours = current->neighbors();
+
+        for (Direction dir : {XPOS, XNEG, ZPOS, ZNEG}) {
+            Chunk *cPtr = neighbours[dir];
+            if (!cPtr) {
+                // Found an entry for this direction
+                glm::ivec2 offset(current->getMinX(), current->getMinZ());
+                offset += TerrainConstants::offsets.at(dir);
+                this->instantiateChunkAt(offset.x, offset.y);
+            }
+        }
+    } else {
+        this->instantiateChunkAt(x, z);
+    }
+}
+
 
 // Combine two 32-bit ints into one 64-bit int
 // where the upper 32 bits are X and the lower 32 bits are Z
@@ -115,10 +151,57 @@ void Terrain::setBlockAt(int x, int y, int z, BlockType t)
     }
 }
 
+void Terrain::generateChunkTerrain(Chunk* chunk) {
+    int minX, minZ;
+
+    minX = chunk->getMinX();
+    minZ = chunk->getMinZ();
+
+    for (int x = 0; x < 16; x++) {
+        for (int z = 0; z < 16; z++) {
+
+            glm::vec2 worldPos = glm::vec2(minX + x, minZ + z);
+
+            float grass = grasslandsYValue(glm::vec2(worldPos[0], worldPos[1]));
+            float mountains = mountainsYValue(glm::vec2(worldPos[0], worldPos[1]));
+            float t = biomeBlender(glm::vec2(minX + x, minZ + z));
+            t = glm::smoothstep(0.55f, 0.45f, t);
+            int yMax = glm::mix(grass, mountains, t);
+
+            yMax = int(glm::clamp(float(yMax), 0.f, 255.f));
+
+            for (int y = 0; y < yMax + 1; y++) {
+                // Stone layer.
+                if (y <= 128) {
+                    chunk->setBlockAt(x, y, z, STONE);
+                // Water pools.
+                } else if (y > 128 && yMax <= 129 && y == yMax) {
+                    chunk->setBlockAt(x, y, z, WATER);
+                // Dirt layer - grass biome and pools.
+                } else if (y > 128 && yMax <= 150 && y < yMax) {
+                    chunk->setBlockAt(x, y, z, DIRT);
+                // Grass layer.
+                } else if (y > 128 && yMax <= 150 && y == yMax) {
+                    chunk->setBlockAt(x, y, z, GRASS);
+                // Snow layer - mountains biome.
+                } else if (y > 200 && y == yMax) {
+                    chunk->setBlockAt(x, y, z, SNOW);
+                // Mountains layer.
+                } else if (y > 128 && yMax > 150) {
+                    chunk->setBlockAt(x, y, z, STONE);
+                }
+            }
+        }
+    }
+
+    chunk->createVBOdata();
+}
+
 Chunk* Terrain::instantiateChunkAt(int x, int z) {
     uPtr<Chunk> chunk = mkU<Chunk>(this->mp_context, x, z);
     Chunk *cPtr = chunk.get();
-    m_chunks[toKey(x, z)] = move(chunk);
+    generateChunkTerrain(cPtr);
+    m_chunks[toKey(x, z)] = std::move(chunk);
     // Set the neighbor pointers of itself and its neighbors
     if(hasChunkAt(x, z + 16)) {
         auto &chunkNorth = m_chunks[toKey(x, z + 16)];
@@ -136,19 +219,24 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
         auto &chunkWest = m_chunks[toKey(x - 16, z)];
         cPtr->linkNeighbor(chunkWest, XNEG);
     }
+
     return cPtr;
 }
 
 void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram) {
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
-            const uPtr<Chunk> &chunk = getChunkAt(x, z);
-            shaderProgram->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(x, 0, z)));
-            shaderProgram->drawInterleaved(*chunk);
+            // WARNING: checking for existing chunk is slow, we should change this once we have proper terrain generation
+            if (hasChunkAt(x, z)) {
+                const uPtr<Chunk> &chunk = getChunkAt(x, z);
+                shaderProgram->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(x, 0, z)));
+                shaderProgram->drawInterleaved(*chunk);
+            }
         }
     }
 }
 
+// TODO: delete me
 void Terrain::CreateTestScene()
 {
     // TODO: DELETE THIS LINE WHEN YOU DELETE m_geomCube!
@@ -190,7 +278,6 @@ void Terrain::CreateTestScene()
         setBlockAt(0, 130, x, GRASS);
     }
 #endif
-
     // Add a central column
     for(int y = 129; y < 140; ++y) {
         setBlockAt(32, y, 32, GRASS);
@@ -204,41 +291,19 @@ void Terrain::CreateTestScene()
 
 void Terrain::CreateTestSceneProceduralTerrain()
 {
-    std::vector<Chunk*> chunks;
-
     // Create the Chunks that will
     // store the blocks for our
     // initial world space
-    for(int x = 0; x < 64; x += 16) {
-        for(int z = 0; z < 64; z += 16) {
-            Chunk* c = instantiateChunkAt(x, z);
-            chunks.push_back(c);
+    for(int x = 0; x < 256; x += 16) {
+        for(int z = 0; z < 256; z += 16) {
+            instantiateChunkAt(x, z);
         }
     }
     // Tell our existing terrain set that
     // the "generated terrain zone" at (0,0)
     // now exists.
+    // TODO: ^^^ what the fuck does this mean
     m_generatedTerrain.insert(toKey(0, 0));
-
-    // create terrain
-    for(int x = 0; x < 64; ++x) {
-        for(int z = 0; z < 64; ++z) {
-            float grass = grasslandsYValue(glm::vec2(), glm::vec3(x, 1., z));
-            float mountains = mountainsYValue(glm::vec2(), glm::vec3(x, 1., z));
-            float t = biomeBlender(glm::vec2(x, z));
-            t = glm::smoothstep(0.6f, 0.4f, t);
-            float yMax = glm::mix(grass, mountains, t);
-
-            for (int y = 0; y < yMax; y++) {
-                setBlockAt(x, y, z, GRASS);
-            }
-        }
-    }
-
-    // create vbo data for newly created chunks
-    for (auto &c : chunks) {
-        c->createVBOdata();
-    }
 }
 
 
@@ -348,19 +413,16 @@ float Terrain::worleyNoise(glm::vec2 coords) {
         }
     }
 
-    float height = 0.5 * minDist + 0.5 * secondMinDist;
-    height = glm::length(closestPoint);
+    float height = glm::length(closestPoint);
 
     return height;
 }
 
-float Terrain::grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
-    //// Remove this offsetPos if unnecessary.
-    ///
-    glm::vec4 offsetPos = glm::vec4(coords[0], 1, coords[1], 1) + glm::vec4(offsetInstanced, 0);
-    glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
+float Terrain::grasslandsYValue(glm::vec2 coords) {
+    glm::vec2 xz = glm::vec2(coords[0], coords[1]);
     float h = 0, amp = 0.5, freq = 128, yValue = 1;
 
+    // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
         glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
         float h1 = (perlinNoise((xz + offset * 25.f) / freq) * perlinNoise((xz + offset * 25.f) / freq));
@@ -370,37 +432,32 @@ float Terrain::grasslandsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
         freq *= 0.5;
     }
 
-    offsetPos.y *= floor(128 + h * 200);
     yValue = floor(125 + h * 200);
 
-    // Enforce min/max bounds.
-    if (yValue < 129.f) {
-        yValue = 129.f;
-    } else if (yValue > 150.f) {
-        yValue = 150.f;
-    }
+    // Enforce height bounds.
+    yValue = glm::clamp(yValue, 129.f, 150.f);
 
     return yValue;
 }
 
-float Terrain::mountainsYValue(glm::vec2 coords, glm::vec3 offsetInstanced) {
-    //// Remove this offsetPos if unnecessary.
-    ///
-    glm::vec4 offsetPos = glm::vec4(coords[0], 1, coords[1], 1) + glm::vec4(offsetInstanced, 0);
-    glm::vec2 xz = glm::vec2(offsetInstanced[0], offsetInstanced[2]);
+float Terrain::mountainsYValue(glm::vec2 coords) {
+    glm::vec2 xz = glm::vec2(coords[0], coords[1]);
     float h = 0, amp = 0.5, freq = 128, yValue = 1;
 
+    // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
         glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
-        float h1 = sin(perlinNoise((xz + offset * 30.f) / freq)) * offset[0] * offset[1] * 0.005;
+        float h1 = sin(perlinNoise((xz + offset * 45.f) / freq)) * perlinNoise((xz + offset * 45.f) / freq) * 5;
 
         h += h1 * amp;
         amp *= 0.5;
         freq *= 0.5;
     }
 
-    offsetPos.y *= floor(180 + h * 200);
-    yValue = floor((197 + h * 160));
+    yValue = floor((151 + h * 160));
+
+    // Enforce height bounds.
+    yValue = glm::clamp(yValue, 151.f, 255.f);
 
     return yValue;
 }

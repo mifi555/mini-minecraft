@@ -7,8 +7,6 @@
 
 #include <qdatetime.h>
 
-
-
 MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
@@ -107,10 +105,22 @@ void MyGL::tick() {
     m_player.tick(dT, m_inputs);
     m_currMSecSinceEpoch = QDateTime::currentMSecsSinceEpoch();
 
+    glm::ivec2 chunk = playerCurrentChunk();
+    m_terrain.generateChunksInProximity(chunk.x, chunk.y);
+
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data
 }
 
+glm::ivec2 MyGL::playerCurrentChunk() {
+    glm::vec2 pPos(m_player.mcr_position.x, m_player.mcr_position.z);
+    return glm::ivec2(16 * glm::ivec2(glm::floor(pPos / 16.f)));
+}
+
+glm::ivec2 MyGL::playerCurrentZone() {
+    glm::vec2 pPos(m_player.mcr_position.x, m_player.mcr_position.z);
+    return glm::ivec2(64 * glm::ivec2(glm::floor(pPos / 64.f)));
+}
 
 //provided
 void MyGL::sendPlayerDataToGUI() const {
@@ -149,7 +159,7 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
-    m_terrain.draw(0, 64, 0, 64, &m_progLambert);
+    m_terrain.draw(-256, 256, -256, 256, &m_progLambert);
 }
 
 void MyGL::keyPressEvent(QKeyEvent *e) {
@@ -167,22 +177,27 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
 
     if (e->key() == Qt::Key_Escape) {
         QApplication::quit();
+    } else if (e->key() == Qt::Key_Right) {
+        m_player.rotateOnUpGlobal(-amount);
+    } else if (e->key() == Qt::Key_Left) {
+        m_player.rotateOnUpGlobal(amount);
+    } else if (e->key() == Qt::Key_Up) {
+        m_player.rotateOnRightLocal(-amount);
+    } else if (e->key() == Qt::Key_Down) {
+        m_player.rotateOnRightLocal(amount);
     } else if (e->key() == Qt::Key_W) {
         m_inputs.wPressed = true;
-
     } else if (e->key() == Qt::Key_S) {
         m_inputs.sPressed = true;
-
     } else if (e->key() == Qt::Key_D) {
         m_inputs.dPressed = true;
-
     } else if (e->key() == Qt::Key_A) {
         m_inputs.aPressed = true;
-
     } else if (e->key() == Qt::Key_F) {
         //toggle flight mode on/off
         m_player.toggleFlightMode();
     }
+  
     //keys E and Q are specific to flightmode
     if (m_player.m_flightMode) {
         if (e->key() == Qt::Key_Q) {
@@ -194,7 +209,7 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
         if (e->key() == Qt::Key_Space) {
             m_inputs.spacePressed = true;
         }
-}
+    }
 }
 
 //Key Release Event
