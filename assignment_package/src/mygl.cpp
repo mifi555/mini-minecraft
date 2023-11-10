@@ -7,10 +7,21 @@
 
 #include <qdatetime.h>
 
-// set one of these to 1 to enable the demo for each milestone feature
+
+/* ~~~~~~~~~~~~~~~~~~~~~~ MILESTONE 1 SHOWCASE ~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+// Set one of these to 1 to enable a specific showcase.
+
+// Showcases the player physics features. Spawns player in default test scene terrain
 #define PHYSICS_DEMO 0
+
+// Showcase chunk generation feature. Spawns player in small 64 by 64 piece of terrain. New chunks created as the player moves.
 #define CHUNKING_DEMO 1
+
+// Showcases the procedural terrain biomes. Spawns player in a larger 516 by 516 terrain.
 #define TERRAIN_DEMO 0
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
