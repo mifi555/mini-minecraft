@@ -14,7 +14,7 @@ MyGL::MyGL(QWidget *parent)
       m_worldAxes(this),
       m_progLambert(this), m_progFlat(this), m_progInstanced(this),
       m_terrain(this), m_player(glm::vec3(48.f, 129.f, 48.f), m_terrain),
-      m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch())
+    m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS)
 {
     // Connect the timer to a function so that when the timer ticks the function is executed
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -164,7 +164,7 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
     // statement were used, but I really dislike their
     // syntax so I chose to be lazy and use a long
     // chain of if statements instead
-    //if (!e->isAutoRepeat()) {
+
     if (e->key() == Qt::Key_Escape) {
         QApplication::quit();
     } else if (e->key() == Qt::Key_W) {
@@ -194,14 +194,12 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
         if (e->key() == Qt::Key_Space) {
             m_inputs.spacePressed = true;
         }
-    //}
 }
 }
 
 //Key Release Event
 
 void MyGL::keyReleaseEvent(QKeyEvent *e) {
-if (!e->isAutoRepeat()) {
         if (e->key() == Qt::Key_W) {
             m_inputs.wPressed = false;
         } else if (e->key() == Qt::Key_S) {
@@ -217,35 +215,13 @@ if (!e->isAutoRepeat()) {
         } else if (e->key() == Qt::Key_Space) {
             m_inputs.spacePressed = false;
         }
-    }
 }
-
-//
 
 void MyGL::mouseMoveEvent(QMouseEvent *e) {
     // TODO
 
-//    // Move the mouse back to the center to avoid hitting screen edges.
-//    // Also, avoid recursive event triggering by blocking signals or
-//    // temporarily disconnecting the mouseMoveEvent handler if necessary.
-
-
-    // float mouse_sensitivity = 0.05f;
-//    float multiplier = mouse_sensitivity / this->devicePixelRatio();
-//    float distX  = e->pos().x() - this->width() * 0.5f;
-//    float distY = e->pos().y() - this->height() * 0.5f;
-//    //x 360
-//    //y -90 to 90
-//    m_inputs.mouseX = glm::mod((m_inputs.mouseX - multiplier * distX), 360.f);
-//    m_inputs.mouseY = glm::clamp(m_inputs.mouseY + multiplier * distY, -90.f, 90.f);
-//    moveMouseToCenter();
-
-//    m_inputs.mouseXpreviousPos = this->width() / 2;
-//    m_inputs.mouseYpreviousPos = this->height() / 2;
-//    m_inputs.mouseX = e->x();
-//    m_inputs.mouseY = e->y();
-
-    moveMouseToCenter();
+    //move mouse center to pevents hitting the edges of the screen
+    //moveMouseToCenter();
 
     float sensitivity = 0.1f;
     float dX = (e->position().x() - m_inputs.mouseX) * (width()/360.f);
@@ -261,9 +237,13 @@ void MyGL::mouseMoveEvent(QMouseEvent *e) {
     m_player.rotateOnUpGlobal(-dX * sensitivity);
 
     moveMouseToCenter();
-
 }
 
 void MyGL::mousePressEvent(QMouseEvent *e) {
     // TODO
+    if (e->button() == Qt::LeftButton) {
+        m_player.removeBlock(&m_terrain);
+    } else if (e->button() == Qt::RightButton) {
+        m_player.placeBlock(&m_terrain, BlockType::GRASS);
+    }
 }
