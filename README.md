@@ -2,11 +2,17 @@
 mini-minecraft-stop-playin-and-unblock-me created by GitHub Classroom
 
 **MILESTONE 1**
+
 Video recording of Milestone features:
+
 https://drive.google.com/file/d/1LEl1vRFtn9Xfg04fpZy6D9NtYGLuvNhW/view?usp=sharing
+
 Timestamps
+
 0:00 - 0:57: Efficient Terrain Rendering and Chunking
+
 0:58 - 2:17: Procedural Terrain
+
 2:18 - 3:26: Game Engine Tick Function and Player Physics
 
 
