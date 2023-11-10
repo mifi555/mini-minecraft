@@ -263,7 +263,7 @@ void MyGL::mouseMoveEvent(QMouseEvent *e) {
     float dX = (e->position().x() - m_inputs.mouseX) * (width()/360.f);
     float dY = (e->position().y() - m_inputs.mouseY) * (height()/360.f);
 
-    dX = glm::clamp(dX, -360.0f, 360.0f);
+    // dX = glm::clamp(dX, -360.0f, 360.0f);
     dY = glm::clamp(dY, -90.0f, 90.0f);
 
     m_inputs.mouseX = e->position().x();
