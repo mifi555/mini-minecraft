@@ -54,14 +54,19 @@ private:
 
     OpenGLContext* mp_context;
 
+    void generateChunkTerrain(Chunk *chunk);
 public:
     Terrain(OpenGLContext *context);
     ~Terrain();
 
+    // given a chunk at x / z, generate it's neighbouring chunks if they are
+    // not already empty
+    void generateChunksInProximity(int x, int z);
+
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
     // Returns a pointer to the created Chunk.
-    Chunk* instantiateChunkAt(int x, int z);
+    Chunk* instantiateChunkAt(int x, int z, bool isEmpty = false);
     // Do these world-space coordinates lie within
     // a Chunk that exists?
     bool hasChunkAt(int x, int z) const;
@@ -88,4 +93,27 @@ public:
     // Initializes the Chunks that store the 64 x 256 x 64 block scene you
     // see when the base code is run.
     void CreateTestScene();
+
+    // initialize chunks with procedural terrain
+    void CreateTestSceneProceduralTerrain();
+
+    // initialize a small 64 x 64 terrain to showcase chunking generation
+    void CreateTestSceneChunking();
+
+    // Various noise functions and helpers used for terrain biome generation.
+
+    glm::vec2 smoothF(glm::vec2 coords);
+    float noise(glm::vec2 coords);
+    float fbm(glm::vec2 coords);
+    glm::vec2 random2(glm::vec2 coords);
+    float surflet(glm::vec2 point, glm::vec2 gridPoint);
+    float perlinNoise(glm::vec2 coords);
+    float worleyNoise(glm::vec2 coords);
+
+    // terrain generators
+
+    float grasslandsYValue(glm::vec2 coords);
+    float mountainsYValue(glm::vec2 coords);
+    float biomeBlender(glm::vec2 coords);
+
 };

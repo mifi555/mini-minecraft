@@ -3,7 +3,12 @@
 
 Drawable::Drawable(OpenGLContext* context)
     : m_count(-1), m_bufIdx(), m_bufPos(), m_bufNor(), m_bufCol(),
-      m_idxGenerated(false), m_posGenerated(false), m_norGenerated(false), m_colGenerated(false),
+      m_idxGenerated(false),
+      m_posGenerated(false),
+      m_norGenerated(false),
+      m_colGenerated(false),
+      m_bufInterleaved(),
+      m_interleavedGenerated(),
       mp_context(context)
 {}
 
@@ -17,6 +22,7 @@ void Drawable::destroyVBOdata()
     mp_context->glDeleteBuffers(1, &m_bufPos);
     mp_context->glDeleteBuffers(1, &m_bufNor);
     mp_context->glDeleteBuffers(1, &m_bufCol);
+    mp_context->glDeleteBuffers(1, &m_bufInterleaved);
     m_idxGenerated = m_posGenerated = m_norGenerated = m_colGenerated = false;
     m_count = -1;
 }
@@ -65,6 +71,12 @@ void Drawable::generateCol()
     mp_context->glGenBuffers(1, &m_bufCol);
 }
 
+void Drawable::generateInterleaved()
+{
+    m_interleavedGenerated = true;
+    mp_context->glGenBuffers(1, &m_bufInterleaved);
+}
+
 bool Drawable::bindIdx()
 {
     if(m_idxGenerated) {
@@ -95,6 +107,14 @@ bool Drawable::bindCol()
         mp_context->glBindBuffer(GL_ARRAY_BUFFER, m_bufCol);
     }
     return m_colGenerated;
+}
+
+bool Drawable::bindInterleaved()
+{
+    if (m_interleavedGenerated) {
+        mp_context->glBindBuffer(GL_ARRAY_BUFFER, m_bufInterleaved);
+    }
+    return m_interleavedGenerated;
 }
 
 InstancedDrawable::InstancedDrawable(OpenGLContext *context)

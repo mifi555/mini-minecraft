@@ -3,12 +3,17 @@
 
 struct InputBundle {
     bool wPressed, aPressed, sPressed, dPressed;
+    bool ePressed, qPressed, fPressed;
     bool spacePressed;
-    float mouseX, mouseY;
+    float mouseX, mouseY, mouseXpreviousPos, mouseYpreviousPos;
+
+    //flags for flight and ground mode
+    bool flight, ground;
 
     InputBundle()
         : wPressed(false), aPressed(false), sPressed(false),
-          dPressed(false), spacePressed(false), mouseX(0.f), mouseY(0.f)
+        dPressed(false), ePressed(false), qPressed(false), fPressed(false), spacePressed(false), mouseX(0.f), mouseY(0.f),
+        flight(true), ground(true)
     {}
 };
 
@@ -18,6 +23,8 @@ protected:
     glm::vec3 m_forward, m_right, m_up;
     // The origin of our local coordinate system
     glm::vec3 m_position;
+
+    friend class MyGL;
 
 public:
     // A readonly reference to position for external use
