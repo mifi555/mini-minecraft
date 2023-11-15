@@ -111,13 +111,12 @@ void Chunk::createVBOdata() {
     std::vector<GLuint> idxData;
     int idxCounter = 0;
 
+    // change this so that it vertices are drawn relative to worldspace (using minX / minZ)
     // zyx because it's more cache efficient
     for (int z = 0; z < 16; z++) {
         for (int y = 0; y < 256; y++) {
             for (int x = 0; x < 16; x++) {
-                //qDebug() << "getting block...";
                 BlockType current = this->getBlockAt(x, y, z);
-                //qDebug() << x << " " << y << " " << z;
                 if (current != EMPTY) {
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
                         glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
@@ -136,7 +135,7 @@ void Chunk::createVBOdata() {
                         if (neighbour == EMPTY) {
                             std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
                             for (size_t i = 0; i < n.pos.size(); i++) {
-                                insertVec4(vertexData, glm::vec4(x, y, z, 1.f) + n.pos[i]);  // vertex position
+                                insertVec4(vertexData, glm::vec4(minX + x, y, minZ + z, 1.f) + n.pos[i]);  // vertex position
                                 insertVec4(vertexData, n.nor);                               // vertex normal
                                 insertVec4(                                                  // vertex color
                                     vertexData,

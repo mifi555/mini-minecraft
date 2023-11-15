@@ -1,5 +1,4 @@
 #include "terrain.h"
-#include "cube.h"
 #include <stdexcept>
 #include <iostream>
 
@@ -19,12 +18,10 @@ namespace TerrainConstants {
 Terrain::Terrain(OpenGLContext *context)
     : m_chunks(),
     m_generatedTerrain(),
-    m_geomCube(context),
     mp_context(context)
 {}
 
 Terrain::~Terrain() {
-    m_geomCube.destroyVBOdata();
 }
 
 // generates neighbouring chunks in all directions of specified chunk
@@ -233,7 +230,6 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
             // WARNING: checking for existing chunk is slow, we should change this once we have proper terrain generation
             if (hasChunkAt(x, z)) {
                 const uPtr<Chunk> &chunk = getChunkAt(x, z);
-                shaderProgram->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(x, 0, z)));
                 shaderProgram->drawInterleaved(*chunk);
             }
         }
@@ -243,9 +239,6 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
 
 void Terrain::CreateTestScene()
 {
-    // TODO: DELETE THIS LINE WHEN YOU DELETE m_geomCube!
-    m_geomCube.createVBOdata();
-
     std::vector<Chunk*> chunks;
 
     // Create the Chunks that will

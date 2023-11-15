@@ -8,21 +8,6 @@
 #include <qdatetime.h>
 
 
-/* ~~~~~~~~~~~~~~~~~~~~~~ MILESTONE 1 SHOWCASE ~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-// Set one of these to 1 to enable a specific showcase.
-
-// Showcases the player physics features. Spawns player in default test scene terrain
-#define PHYSICS_DEMO 0
-
-// Showcase chunk generation feature. Spawns player in small 64 by 64 piece of terrain. New chunks created as the player moves.
-#define CHUNKING_DEMO 1
-
-// Showcases the procedural terrain biomes. Spawns player in a larger 516 by 516 terrain.
-#define TERRAIN_DEMO 0
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
 MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
@@ -88,14 +73,7 @@ void MyGL::initializeGL()
     // using multiple VAOs, we can just bind one once.
     glBindVertexArray(vao);
 
-#if CHUNKING_DEMO
     m_terrain.CreateTestSceneChunking();
-#elif PHYSICS_DEMO
-    m_terrain.CreateTestScene();
-#elif TERRAIN_DEMO
-    m_terrain.CreateTestSceneProceduralTerrain();
-#endif
-
 }
 
 void MyGL::resizeGL(int w, int h) {
@@ -124,10 +102,8 @@ void MyGL::tick() {
     m_player.tick(dT, m_inputs);
     m_currMSecSinceEpoch = QDateTime::currentMSecsSinceEpoch();
 
-#if !PHYSICS_DEMO
     glm::ivec2 chunk = playerCurrentChunk();
     m_terrain.generateChunksInProximity(chunk.x, chunk.y);
-#endif
 
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data
@@ -180,6 +156,7 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
+    m_progLambert.setModelMatrix(glm::mat4(1.f));
     m_terrain.draw(-256, 256, -256, 256, &m_progLambert);
 }
 
