@@ -5,11 +5,23 @@ Entity::Entity()
 {}
 
 Entity::Entity(glm::vec3 pos)
-    : m_forward(0,0,-1), m_right(1,0,0), m_up(0,1,0), m_position(pos), mcr_position(m_position)
+    : m_forward(0,0,-1),
+    m_right(1,0,0),
+    m_up(0,1,0),
+    m_position(pos),
+    m_positionPrevious(pos),
+    mcr_position(m_position),
+    mcr_positionPrevious(m_positionPrevious)
 {}
 
 Entity::Entity(const Entity &e)
-    : m_forward(e.m_forward), m_right(e.m_right), m_up(e.m_up), m_position(e.m_position), mcr_position(m_position)
+    : m_forward(e.m_forward),
+    m_right(e.m_right),
+    m_up(e.m_up),
+    m_position(e.m_position),
+    m_positionPrevious(e.m_positionPrevious),
+    mcr_position(m_position),
+    mcr_positionPrevious(m_positionPrevious)
 {}
 
 Entity::~Entity()
@@ -17,30 +29,37 @@ Entity::~Entity()
 
 
 void Entity::moveAlongVector(glm::vec3 dir) {
+    m_positionPrevious = m_position;
     m_position += dir;
 }
 
 void Entity::moveForwardLocal(float amount) {
+    m_positionPrevious = m_position;
     m_position += amount * m_forward;
 }
 
 void Entity::moveRightLocal(float amount) {
+    m_positionPrevious = m_position;
     m_position += amount * m_right;
 }
 
 void Entity::moveUpLocal(float amount) {
+    m_positionPrevious = m_position;
     m_position += amount * m_up;
 }
 
 void Entity::moveForwardGlobal(float amount) {
+    m_positionPrevious = m_position;
     m_position += glm::vec3(0, 0, amount);
 }
 
 void Entity::moveRightGlobal(float amount) {
+    m_positionPrevious = m_position;
     m_position += glm::vec3(amount, 0, 0);
 }
 
 void Entity::moveUpGlobal(float amount) {
+    m_positionPrevious = m_position;
     m_position += glm::vec3(0, amount, 0);
 }
 

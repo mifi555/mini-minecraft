@@ -5,6 +5,8 @@ SOURCES += \
     $$PWD/main.cpp \
     $$PWD/mainwindow.cpp \
     $$PWD/mygl.cpp \
+    $$PWD/scene/blocktypeworker.cpp \
+    $$PWD/scene/vboworker.cpp \
     $$PWD/shaderprogram.cpp \
     $$PWD/drawable.cpp \
     $$PWD/cameracontrolshelp.cpp \
@@ -20,7 +22,9 @@ SOURCES += \
 HEADERS += \
     $$PWD/mainwindow.h \
     $$PWD/mygl.h \
+    $$PWD/scene/blocktypeworker.h \
     $$PWD/scene/chunkconstants.h \
+    $$PWD/scene/vboworker.h \
     $$PWD/shaderprogram.h \
     $$PWD/drawable.h \
     $$PWD/cameracontrolshelp.h \

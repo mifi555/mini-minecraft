@@ -28,9 +28,6 @@ void Player::tick(float dT, InputBundle &input) {
 }
 
 void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
-    // TODO: Update the Player's velocity and acceleration based on the
-    // state of the inputs.
-
     //glm::mat3 cameraRotation = glm::mat3(glm::orientate3(glm::vec3(glm::radians(inputs.mouseY), 0, glm::radians(inputs.mouseX))));
     //glm::mat3 groundRotation = glm::mat3(glm::eulerAngleY(glm::radians(inputs.mouseX)));
     //m_camera.setRotation(cameraRotation);
@@ -128,8 +125,6 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input){
 
 
 void Player::computePhysics(float dT, const Terrain &terrain, InputBundle &input) {
-    // TODO: Update the Player's position based on its acceleration
-    // and velocity, and also perform collision detection.
     //In both movement modes, the player's velocity is reduced to less than 100% of its current value every frame (simulates friction + drag) before acceleration is added to it.
     m_velocity *= 0.8f;
     m_velocity += m_acceleration * dT;
@@ -256,7 +251,7 @@ void Player::removeBlock(Terrain *terrain) {
 
     if (gridMarch(rayOrigin, rayDirection, *terrain, &out_dist, &out_blockHit)) {
         terrain->setBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z, EMPTY);
-        terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+        //->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
     }
 }
 
@@ -273,17 +268,17 @@ void Player::placeBlock(Terrain *terrain, BlockType blockType) {
             if (terrain->getBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z + glm::sign(rayDirection.z)) == EMPTY) {
                 //place block at that position
                 terrain->setBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z + glm::sign(rayDirection.z), blockType);
-                terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+                //terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
             }
         } else if (m_interfaceAxis == 1) {
             if (terrain->getBlockAt(out_blockHit.x, out_blockHit.y + glm::sign(rayDirection.y), out_blockHit.z) == EMPTY) {
                 terrain->setBlockAt(out_blockHit.x, out_blockHit.y + glm::sign(rayDirection.y), out_blockHit.z, blockType);
-                terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+                //terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
             }
         } else if (m_interfaceAxis == 2) {
             if (terrain->getBlockAt(out_blockHit.x + glm::sign(rayDirection.x), out_blockHit.y, out_blockHit.z) == EMPTY) {
                 terrain->setBlockAt(out_blockHit.x + glm::sign(rayDirection.x), out_blockHit.y, out_blockHit.z, blockType);
-                terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+                //terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
             }
         }
     }

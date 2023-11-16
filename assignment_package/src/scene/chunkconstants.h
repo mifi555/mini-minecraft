@@ -69,8 +69,6 @@ namespace ChunkConstants {
         { glm::ivec3(0, 0, -1), ChunkConstants::BackFace,   glm::vec4(0,0,-1,0)  }                  // zneg  back face
     }};
 
-    // TODO: this is temporary, before we reach milestone for defining UV coords for textured blocks
-    // TODO: replace with actual colors
     const static std::unordered_map<BlockType, glm::vec4> blocktype_to_color {
             { GRASS, glm::vec4(0.0431f, 0.51373f, 0.23137f, 1.f) },
             { DIRT,  glm::vec4(0.5373f, 0.3176f, 0.0392f, 1.f) },

@@ -13,7 +13,8 @@ MyGL::MyGL(QWidget *parent)
       m_worldAxes(this),
       m_progLambert(this), m_progFlat(this), m_progInstanced(this),
       m_terrain(this), m_player(glm::vec3(48.f, 129.f, 48.f), m_terrain),
-    m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS)
+    m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS),
+    m_timer()
 {
     // Connect the timer to a function so that when the timer ticks the function is executed
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -28,11 +29,6 @@ MyGL::MyGL(QWidget *parent)
 MyGL::~MyGL() {
     makeCurrent();
     glDeleteVertexArrays(1, &vao);
-}
-
-
-void MyGL::moveMouseToCenter() {
-    QCursor::setPos(this->mapToGlobal(QPoint(width() / 2, height() / 2)));
 }
 
 void MyGL::initializeGL()
@@ -73,7 +69,8 @@ void MyGL::initializeGL()
     // using multiple VAOs, we can just bind one once.
     glBindVertexArray(vao);
 
-    m_terrain.CreateTestSceneChunking();
+    // initialize starting terrain zones at spawn
+    m_terrain.initializeTerrain();
 }
 
 void MyGL::resizeGL(int w, int h) {
@@ -96,14 +93,12 @@ void MyGL::resizeGL(int w, int h) {
 // all per-frame actions here, such as performing physics updates on all
 // entities in the scene.
 void MyGL::tick() {
-
     //current_time - previously stored time
     float dT = (QDateTime::currentMSecsSinceEpoch() - m_currMSecSinceEpoch) / 1000.0f;
     m_player.tick(dT, m_inputs);
     m_currMSecSinceEpoch = QDateTime::currentMSecsSinceEpoch();
 
-    glm::ivec2 chunk = playerCurrentChunk();
-    m_terrain.generateChunksInProximity(chunk.x, chunk.y);
+    m_terrain.multithreadedWork(m_player.mcr_position, m_player.mcr_positionPrevious);
 
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data
@@ -230,15 +225,17 @@ void MyGL::keyReleaseEvent(QKeyEvent *e) {
         }
 }
 
-void MyGL::mouseMoveEvent(QMouseEvent *e) {
-    // TODO
+void MyGL::moveMouseToCenter() {
+    QCursor::setPos(this->mapToGlobal(QPoint(width() / 2, height() / 2)));
+}
 
+void MyGL::mouseMoveEvent(QMouseEvent *e) {
     //move mouse center to pevents hitting the edges of the screen
     //moveMouseToCenter();
-
+#if 0
     float sensitivity = 0.1f;
-    float dX = (e->position().x() - m_inputs.mouseX) * (width()/360.f);
-    float dY = (e->position().y() - m_inputs.mouseY) * (height()/360.f);
+    float dX = (e->position().x() - m_inputs.mouseX) * (width() / 360.f);
+    float dY = (e->position().y() - m_inputs.mouseY) * (height() / 360.f);
 
     // dX = glm::clamp(dX, -360.0f, 360.0f);
     dY = glm::clamp(dY, -90.0f, 90.0f);
@@ -248,12 +245,11 @@ void MyGL::mouseMoveEvent(QMouseEvent *e) {
 
     m_player.rotateOnRightLocal(-dY * sensitivity);
     m_player.rotateOnUpGlobal(-dX * sensitivity);
-
     moveMouseToCenter();
+#endif
 }
 
 void MyGL::mousePressEvent(QMouseEvent *e) {
-    // TODO
     if (e->button() == Qt::LeftButton) {
         m_player.removeBlock(&m_terrain);
     } else if (e->button() == Qt::RightButton) {

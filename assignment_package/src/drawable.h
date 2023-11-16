@@ -9,8 +9,6 @@ class Drawable
 protected:
     int m_count;     // The number of indices stored in bufIdx.
 
-    // TODO: delete these once we have no use for them using the interleaved VBO method ~~~~~~~~
-
     GLuint m_bufIdx; // A Vertex Buffer Object that we will use to store triangle indices (GLuints)
     GLuint m_bufPos; // A Vertex Buffer Object that we will use to store mesh vertices (vec4s)
     GLuint m_bufNor; // A Vertex Buffer Object that we will use to store mesh normals (vec4s)
@@ -21,8 +19,6 @@ protected:
     bool m_posGenerated;
     bool m_norGenerated;
     bool m_colGenerated;
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     GLuint m_bufInterleaved;
 

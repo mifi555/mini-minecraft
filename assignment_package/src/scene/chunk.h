@@ -69,3 +69,15 @@ public:
     int getMinX() const;
     int getMinZ() const;
 };
+
+
+struct ChunkVBOData {
+    Chunk* chunk;
+    std::vector<GLfloat> vboDataOpaque, vboDataTransparent;
+    std::vector<GLuint> idxDataOpaque, idxDataTransparent;
+
+    ChunkVBOData(Chunk *c) : chunk(c),
+                             vboDataOpaque{}, vboDataTransparent{},
+                             idxDataOpaque{}, idxDataTransparent{}
+    {}
+};

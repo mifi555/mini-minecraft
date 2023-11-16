@@ -21,14 +21,16 @@ class Entity {
 protected:
     // Vectors that define the axes of our local coordinate system
     glm::vec3 m_forward, m_right, m_up;
-    // The origin of our local coordinate system
-    glm::vec3 m_position;
+
+    glm::vec3 m_position;               // world position
+    glm::vec3 m_positionPrevious;       // previous world position
 
     friend class MyGL;
 
 public:
     // A readonly reference to position for external use
     const glm::vec3& mcr_position;
+    const glm::vec3& mcr_positionPrevious;
 
     // Various constructors
     Entity();

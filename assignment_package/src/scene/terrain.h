@@ -1,4 +1,8 @@
 #pragma once
+
+#include <QThreadPool>
+#include <QMutex>
+
 #include "smartpointerhelp.h"
 #include "glm_includes.h"
 #include "chunk.h"
@@ -44,19 +48,25 @@ private:
 
     OpenGLContext* mp_context;
 
+    // shared resources for multithreading
+    std::unordered_set<Chunk*> m_chunksThatHaveBlockData;
+    QMutex m_chunksThatHaveBlockDataLock;
+    std::vector<ChunkVBOData> m_chunksThatHaveVBOs;
+    QMutex m_chunksThatHaveVBOsLock;
+
     void generateChunkTerrain(Chunk *chunk);
+
+    void tryExpansion(glm::vec3 pos, glm::vec3 posPrev);
+    void checkThreadResults();
+    void instantiateChunksAtTerrain(int x, int z, std::vector<Chunk *>& chunksToFill);
 public:
     Terrain(OpenGLContext *context);
     ~Terrain();
 
-    // given a chunk at x / z, generate it's neighbouring chunks if they are
-    // not already empty
-    void generateChunksInProximity(int x, int z);
-
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
     // Returns a pointer to the created Chunk.
-    Chunk* instantiateChunkAt(int x, int z, bool isEmpty = false);
+    Chunk* instantiateChunkAt(int x, int z);
     // Do these world-space coordinates lie within
     // a Chunk that exists?
     bool hasChunkAt(int x, int z) const;
@@ -75,20 +85,15 @@ public:
     // given type.
     void setBlockAt(int x, int y, int z, BlockType t);
 
+    void multithreadedWork(glm::vec3 playerPosition, glm::vec3 playerPreviousPosition);
+
     // Draws every Chunk that falls within the bounding box
     // described by the min and max coords, using the provided
     // ShaderProgram
     void draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram);
 
-    // Initializes the Chunks that store the 64 x 256 x 64 block scene you
-    // see when the base code is run.
-    void CreateTestScene();
-
-    // initialize chunks with procedural terrain
-    void CreateTestSceneProceduralTerrain();
-
-    // initialize a small 64 x 64 terrain to showcase chunking generation
-    void CreateTestSceneChunking();
+    // creates and draws terrain zones at player spawn
+    void initializeTerrain();
 
     // Various noise functions and helpers used for terrain biome generation.
 
