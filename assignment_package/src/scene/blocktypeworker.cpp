@@ -1,5 +1,7 @@
 #include "blocktypeworker.h"
 
+#define DEBUG
+
 BlockTypeWorker::BlockTypeWorker(
     int x,
     int z,
@@ -14,5 +16,34 @@ BlockTypeWorker::BlockTypeWorker(
 }
 
 void BlockTypeWorker::run() {
-    qDebug() << "running...";
+#ifdef DEBUG
+    for (Chunk* &chunk : m_chunksToFill) {
+
+        // flat terrain
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                chunk->setBlockAt(x, 128, z, GRASS);
+            }
+        }
+
+        // draw the terrain boundaries
+        if (chunk->getMinX() == m_minX) {
+            for (int z = 0; z < 16; z++) {
+                chunk->setBlockAt(0, 128, z, STONE);
+            }
+        }
+
+        if (chunk->getMinZ() == m_minZ) {
+            for (int x = 0; x < 16; x++) {
+                chunk->setBlockAt(x, 128, 0, STONE);
+            }
+        }
+
+        mp_completedChunksLock->lock();
+        mp_completedChunks->insert(chunk);
+        mp_completedChunksLock->unlock();
+    }
+#else
+    // TODO: terrain gen code here:
+#endif
 }

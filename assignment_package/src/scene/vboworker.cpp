@@ -8,5 +8,9 @@ VBOWorker::VBOWorker(Chunk *c, std::vector<ChunkVBOData> *data, QMutex *dataLock
 
 void VBOWorker::run()
 {
-    // TODO: VBOWorker::run()
+    ChunkVBOData vboData(mp_chunk);
+    mp_chunk->createMultithreaded(vboData);
+    mp_chunkVBOsCompletedLock->lock();
+    mp_chunkVBOsCompleted->push_back(vboData);
+    mp_chunkVBOsCompletedLock->unlock();
 }

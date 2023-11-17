@@ -152,7 +152,7 @@ void MyGL::paintGL() {
 // for more info)
 void MyGL::renderTerrain() {
     m_progLambert.setModelMatrix(glm::mat4(1.f));
-    m_terrain.draw(-256, 256, -256, 256, &m_progLambert);
+    m_terrain.draw(m_player.mcr_position, &m_progLambert);
 }
 
 void MyGL::keyPressEvent(QKeyEvent *e) {

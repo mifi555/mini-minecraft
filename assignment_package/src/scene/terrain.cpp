@@ -4,9 +4,56 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <unordered_map>
 
 #define TERRAIN_DRAW_RADIUS 1       // (1) 3x3 radius (terrain that is created and drawn)
 #define TERRAIN_CREATE_RADIUS 2     // (2) 5x5 radius (terrain that is created)
+
+// util
+
+namespace TerrainConstants {
+
+// NOTE: We are treating +Z as NORTH and +X as WEST
+
+enum Direction {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST,
+    NIL
+};
+
+// the range of our create radius
+const static glm::ivec2 topLeft(TERRAIN_CREATE_RADIUS * 64, TERRAIN_CREATE_RADIUS * 64);
+const static glm::ivec2 bottomLeft(TERRAIN_CREATE_RADIUS * 64, -TERRAIN_CREATE_RADIUS * 64);
+const static glm::ivec2 topRight(-TERRAIN_CREATE_RADIUS * 64, TERRAIN_CREATE_RADIUS * 64);
+const static glm::ivec2 bottomRight(-TERRAIN_CREATE_RADIUS * 64, -TERRAIN_CREATE_RADIUS * 64);
+
+const static glm::ivec2 northVec(0, 64);
+const static glm::ivec2 southVec(0, -64);
+const static glm::ivec2 eastVec(-64, 0);
+const static glm::ivec2 westVec(64, 0);
+
+const static std::unordered_map<Direction, Direction> direction_to_opposite = {
+    { NORTH, SOUTH },
+    { SOUTH, NORTH },
+    { EAST,  WEST },
+    { WEST,  EAST }
+};
+
+const static std::unordered_map<Direction, std::pair<glm::ivec2, glm::ivec2>> direction_to_range = {
+    { NORTH, {topRight, topLeft} },
+    { SOUTH, {bottomRight, bottomLeft} },
+    { EAST,  {bottomRight, topRight} },
+    { WEST,  {bottomLeft, topLeft} }
+};
+
+}
+
+// get terrain zone at specified position
+glm::ivec2 terrainAtXZPos(glm::vec2 p) {
+    return glm::ivec2(64 * glm::ivec2(glm::floor(p / 64.f)));
+}
 
 Terrain::Terrain(OpenGLContext *context)
     : m_chunks(),
@@ -130,12 +177,9 @@ void Terrain::multithreadedWork(glm::vec3 playerPosition, glm::vec3 playerPrevio
 }
 
 void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
-{
-    glm::vec2 p(pos.x, pos.z);
-    glm::vec2 pprev(posPrev.x, posPrev.z);
-
-    glm::ivec2 currentZone = glm::ivec2(64 * glm::ivec2(glm::floor(p / 64.f)));
-    glm::ivec2 prevZone = glm::ivec2(64 * glm::ivec2(glm::floor(pprev / 64.f)));
+{   
+    glm::ivec2 currentZone = terrainAtXZPos(glm::vec2(pos.x, pos.z));
+    glm::ivec2 prevZone    = terrainAtXZPos(glm::vec2(posPrev.x, posPrev.z));
 
     if (currentZone == prevZone) {
         return;
@@ -143,38 +187,81 @@ void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
 
     // if the player is stepping into a new zone, we need to spawn threads to create new zones / create VBO data
 
-    // TODO: destroy vbo data of zones that are outside of our radius
+    TerrainConstants::Direction direction = TerrainConstants::NIL;
 
-    int radius = 64 * TERRAIN_CREATE_RADIUS;
-    glm::ivec2 min = currentZone - radius;
-    glm::ivec2 max = currentZone + radius;
+    {
+        glm::ivec2 dir = currentZone - prevZone;
 
-    // loop through create radius and check for uncreated zones, zones with chunks without vbo data
+        if (dir == TerrainConstants::northVec) {
+            direction = TerrainConstants::NORTH;
+        } else if (dir == TerrainConstants::southVec) {
+            direction = TerrainConstants::SOUTH;
+        } else if (dir == TerrainConstants::eastVec) {
+            direction = TerrainConstants::EAST;
+        } else if (dir == TerrainConstants::westVec) {
+            direction = TerrainConstants::WEST;
+        } else {
+            qDebug() << "Could not discern direction. Something is wrong.";
+            assert(false);
+        }
+    }
+
+    // TODO: destroy vbo data (in GPU?) of zones that are outside of our radius
+
+    glm::ivec2 min = currentZone + TerrainConstants::direction_to_range.at(direction).first;
+    glm::ivec2 max = currentZone + TerrainConstants::direction_to_range.at(direction).second;
+
+    // loop through create radius and check for uncreated zones or zones with chunks without vbo data
     for (int x = min.x; x <= max.x; x += 64) {
         for (int z = min.y; z <= max.y; z += 64) {
             if (m_generatedTerrain.find(toKey(x, z)) == m_generatedTerrain.end()) {
-
                 m_generatedTerrain.insert(toKey(x, z));
                 std::vector<Chunk*> chunksToFill;
 
                 // fill chunksToFill with new chunks of terrain
                 instantiateChunksAtTerrain(x, z, chunksToFill);
 
+                // spawn blocktype workers
                 BlockTypeWorker* worker = new BlockTypeWorker(
                     x, z, chunksToFill, &m_chunksThatHaveBlockData, &m_chunksThatHaveBlockDataLock);
                 QThreadPool::globalInstance()->start(worker);
             } else {
-                // check chunks of this terrain have VBO data.
-            }
+                // create VBO data for this terrain zone if there isn't already
+                std::vector<Chunk*> chunksWithoutVBO;
 
-            // check that chunks in this terrain zone have VBO data.
+                // check for chunks that don't have VBO's for this terrain zone
+                checkForChunksWithoutVBOs(x, z, chunksWithoutVBO);
+
+                // spawn VBO workers
+                for (Chunk* &c : chunksWithoutVBO) {
+                    VBOWorker* worker = new VBOWorker(c, &m_chunksThatHaveVBOs, &m_chunksThatHaveVBOsLock);
+                    QThreadPool::globalInstance()->start(worker);
+                }
+            }
         }
     }
 }
 
 void Terrain::checkThreadResults()
 {
-    // TODO: checkThreadResults
+    m_chunksThatHaveBlockDataLock.lock();
+    // spawn VBO workers for chunks
+    for (Chunk* c : m_chunksThatHaveBlockData) {
+        VBOWorker* worker = new VBOWorker(c, &m_chunksThatHaveVBOs, &m_chunksThatHaveVBOsLock);
+        QThreadPool::globalInstance()->start(worker);
+    }
+    // clear chunks list
+    m_chunksThatHaveBlockData.clear();
+    m_chunksThatHaveBlockDataLock.unlock();
+
+    m_chunksThatHaveVBOsLock.lock();
+    // loop through VBO data and send vbo data to GPU
+    for (ChunkVBOData& vbo : m_chunksThatHaveVBOs) {
+        vbo.chunk->createVBOBuffer(vbo.vboDataOpaque, vbo.idxDataOpaque);
+    }
+    // clear vbo list
+    m_chunksThatHaveVBOs.clear();
+    m_chunksThatHaveVBOsLock.unlock();
 }
 
 void Terrain::instantiateChunksAtTerrain(int terrainX, int terrainZ, std::vector<Chunk *> &chunksToFill)
@@ -183,6 +270,24 @@ void Terrain::instantiateChunksAtTerrain(int terrainX, int terrainZ, std::vector
     for (int x = terrainX; x < terrainX + 4 * 16; x += 16) {
         for (int z = terrainZ; z < terrainZ + 4 * 16; z += 16) {
             chunksToFill.push_back(instantiateChunkAt(x, z));
+        }
+    }
+}
+
+void Terrain::checkForChunksWithoutVBOs(int terrainX, int terrainZ, std::vector<Chunk *> &chunksWithoutVBO)
+{
+    // check 4x4 chunks starting from terrain origin terrainX, terrainZ
+    for (int x = terrainX; x < terrainX + 4 * 16; x += 16) {
+        for (int z = terrainZ; z < terrainZ + 4 * 16; z += 16) {
+            if (hasChunkAt(x, z)) {
+                uPtr<Chunk> &chunk = getChunkAt(x, z);
+                if (chunk->elemCount() == -1) {
+                    chunksWithoutVBO.push_back(chunk.get());
+                }
+            } else {
+                qDebug() << "No chunk found at this terrain zone. Something is wrong.";
+                assert(false);
+            }
         }
     }
 }
@@ -257,8 +362,10 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
     return cPtr;
 }
 
-void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram) {
-    // TODO: set this to draw the "drawable" terrain zones in TERRAIN_DRAW_RADIUS
+void Terrain::drawTerrainZone(int minX, int minZ, ShaderProgram *shaderProgram) {
+    int maxX = minX + 64;
+    int maxZ = minZ + 64;
+
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
             if (hasChunkAt(x, z)) {
@@ -269,18 +376,40 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
     }
 }
 
-void Terrain::initializeTerrain()
-{
-    // Create the Chunks that will
-    // store the blocks for our
-    // initial world space
-    for(int x = 0; x < 64; x += 16) {
-        for(int z = 0; z < 64; z += 16) {
-            instantiateChunkAt(x, z);
+void Terrain::draw(glm::vec3 playerPosition, ShaderProgram *shaderProgram) {
+    glm::ivec2 currentZone = terrainAtXZPos(glm::vec2(playerPosition.x, playerPosition.z));
+
+    int radius = 64 * TERRAIN_DRAW_RADIUS;
+    glm::ivec2 min = currentZone - radius;
+    glm::ivec2 max = currentZone + radius;
+
+    for (int x = min.x; x <= max.x; x += 64) {
+        for (int z = min.y; z <= max.y; z += 64) {
+            drawTerrainZone(x, z, shaderProgram);
         }
     }
+}
 
-    m_generatedTerrain.insert(toKey(0, 0));
+void Terrain::initializeTerrain()
+{
+    int radius = 64 * TERRAIN_CREATE_RADIUS;
+    glm::ivec2 min = glm::ivec2(0, 0) - radius;
+    glm::ivec2 max = glm::ivec2(0, 0) + radius;
+
+    for (int x = min.x; x <= max.x; x += 64) {
+        for (int z = min.y; z <= max.y; z += 64) {
+            m_generatedTerrain.insert(toKey(x, z));
+            std::vector<Chunk*> chunksToFill;
+
+            // fill chunksToFill with new chunks of terrain
+            instantiateChunksAtTerrain(x, z, chunksToFill);
+
+            // spawn blocktype workers
+            BlockTypeWorker* worker = new BlockTypeWorker(
+                x, z, chunksToFill, &m_chunksThatHaveBlockData, &m_chunksThatHaveBlockDataLock);
+            QThreadPool::globalInstance()->start(worker);
+        }
+    }
 }
 
 

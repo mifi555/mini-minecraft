@@ -59,6 +59,8 @@ private:
     void tryExpansion(glm::vec3 pos, glm::vec3 posPrev);
     void checkThreadResults();
     void instantiateChunksAtTerrain(int x, int z, std::vector<Chunk *>& chunksToFill);
+    void checkForChunksWithoutVBOs(int x, int z, std::vector<Chunk *>& chunksWithoutVBO);
+    void drawTerrainZone(int minX, int minZ, ShaderProgram *shaderProgram);
 public:
     Terrain(OpenGLContext *context);
     ~Terrain();
@@ -90,7 +92,7 @@ public:
     // Draws every Chunk that falls within the bounding box
     // described by the min and max coords, using the provided
     // ShaderProgram
-    void draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram);
+    void draw(glm::vec3 playerPosition, ShaderProgram *shaderProgram);
 
     // creates and draws terrain zones at player spawn
     void initializeTerrain();

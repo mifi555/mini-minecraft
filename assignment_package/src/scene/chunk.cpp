@@ -59,7 +59,7 @@ void Chunk::linkNeighbor(uPtr<Chunk> &neighbor, Direction dir) {
     }
 }
 
-void Chunk::buildInterleavedVBOFromData(std::vector<GLfloat> &vertexData, std::vector<GLuint> &idxData) {
+void Chunk::createVBOBuffer(std::vector<GLfloat> &vertexData, std::vector<GLuint> &idxData) {
 
     Drawable::m_count = idxData.size();
 
@@ -96,6 +96,53 @@ void createFaceIndices(std::vector<GLuint>& idxData, const std::array<GLuint, Ch
     idxData.push_back(faceIndices.at(1));
     idxData.push_back(faceIndices.at(3));
     idxData.push_back(faceIndices.at(2));
+}
+
+void Chunk::createMultithreaded(ChunkVBOData& data) {
+    // TODO: For transparent types, we'll need to populate a "transparent" buffer that will be drawn seperately.
+
+    int idxCounter = 0;
+
+    // change this so that it vertices are drawn relative to worldspace (using minX / minZ)
+    // zyx because it's more cache efficient
+    for (int z = 0; z < 16; z++) {
+        for (int y = 0; y < 256; y++) {
+            for (int x = 0; x < 16; x++) {
+                BlockType current = this->getBlockAt(x, y, z);
+                if (current != EMPTY) {
+                    for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
+                        glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
+
+                        BlockType neighbour;
+
+                        if (offset.x < 0 || offset.x > 15 ||
+                            offset.y < 0 || offset.y > 255 ||
+                            offset.z < 0 || offset.z > 15) {
+                            neighbour = EMPTY;
+                        } else {
+                            neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
+                        }
+
+
+                        if (neighbour == EMPTY) {
+                            std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
+                            for (size_t i = 0; i < n.pos.size(); i++) {
+                                insertVec4(data.vboDataOpaque, glm::vec4(minX + x, y, minZ + z, 1.f) + n.pos[i]);  // vertex position
+                                insertVec4(data.vboDataOpaque, n.nor);                               // vertex normal
+                                insertVec4(                                                  // vertex color
+                                    data.vboDataOpaque,
+                                    ChunkConstants::blocktype_to_color.at(current)
+                                    );
+                                faceIndices.at(i) = idxCounter++;
+                            }
+                            // add index data for this face
+                            createFaceIndices(data.idxDataOpaque, faceIndices);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Chunk information available to us:
@@ -152,5 +199,5 @@ void Chunk::createVBOdata() {
         }
     }
 
-    buildInterleavedVBOFromData(vertexData, idxData);
+    createVBOBuffer(vertexData, idxData);
 }
