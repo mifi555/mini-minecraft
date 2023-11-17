@@ -201,12 +201,25 @@ void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
         } else if (dir == TerrainConstants::westVec) {
             direction = TerrainConstants::WEST;
         } else {
-            qDebug() << "Could not discern direction. Something is wrong.";
-            assert(false);
+            qCritical() << "Could not discern direction. Something is wrong.";
+            std::exit(-1);
         }
     }
 
-    // TODO: destroy vbo data (in GPU?) of zones that are outside of our radius
+    // destroy vbo data of zones that are outside of our radius (the zones in the opposite direction of player)
+    {
+        TerrainConstants::Direction oppositeDirection = TerrainConstants::direction_to_opposite.at(direction);
+        glm::ivec2 min = prevZone + TerrainConstants::direction_to_range.at(oppositeDirection).first;
+        glm::ivec2 max = prevZone + TerrainConstants::direction_to_range.at(oppositeDirection).second;
+
+        for (int x = min.x; x <= max.x; x += 64) {
+            for (int z = min.y; z <= max.y; z += 64) {
+                auto it = m_generatedTerrain.find(toKey(x, z));
+                assert(it != m_generatedTerrain.end());
+                destroyVBOsAtTerrain(x, z);
+            }
+        }
+    }
 
     glm::ivec2 min = currentZone + TerrainConstants::direction_to_range.at(direction).first;
     glm::ivec2 max = currentZone + TerrainConstants::direction_to_range.at(direction).second;
@@ -285,8 +298,27 @@ void Terrain::checkForChunksWithoutVBOs(int terrainX, int terrainZ, std::vector<
                     chunksWithoutVBO.push_back(chunk.get());
                 }
             } else {
-                qDebug() << "No chunk found at this terrain zone. Something is wrong.";
-                assert(false);
+                qCritical() << "No chunk found at this terrain zone. Something is wrong.";
+                std::exit(-1);
+            }
+        }
+    }
+}
+
+void Terrain::destroyVBOsAtTerrain(int terrainX, int terrainZ) {
+    // check 4x4 chunks starting from terrain origin terrainX, terrainZ
+    for (int x = terrainX; x < terrainX + 4 * 16; x += 16) {
+        for (int z = terrainZ; z < terrainZ + 4 * 16; z += 16) {
+            if (hasChunkAt(x, z)) {
+                uPtr<Chunk> &chunk = getChunkAt(x, z);
+                if (chunk->elemCount() != -1) {
+                    chunk->destroyVBOdata();
+                } else {
+                    qWarning() << "No VBO data for deletion found for this chunk. Something wrong?";
+                }
+            } else {
+                qCritical() << "No chunk found at this terrain zone. Something is wrong.";
+                std::exit(-1);
             }
         }
     }

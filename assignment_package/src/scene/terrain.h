@@ -60,6 +60,7 @@ private:
     void checkThreadResults();
     void instantiateChunksAtTerrain(int x, int z, std::vector<Chunk *>& chunksToFill);
     void checkForChunksWithoutVBOs(int x, int z, std::vector<Chunk *>& chunksWithoutVBO);
+    void destroyVBOsAtTerrain(int terrainX, int terrainZ);
     void drawTerrainZone(int minX, int minZ, ShaderProgram *shaderProgram);
 public:
     Terrain(OpenGLContext *context);
@@ -112,5 +113,4 @@ public:
     float grasslandsYValue(glm::vec2 coords);
     float mountainsYValue(glm::vec2 coords);
     float biomeBlender(glm::vec2 coords);
-
 };
