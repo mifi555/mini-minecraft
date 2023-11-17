@@ -8,27 +8,13 @@
 #include <qdatetime.h>
 
 
-/* ~~~~~~~~~~~~~~~~~~~~~~ MILESTONE 1 SHOWCASE ~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-// Set one of these to 1 to enable a specific showcase.
-
-// Showcases the player physics features. Spawns player in default test scene terrain
-#define PHYSICS_DEMO 0
-
-// Showcase chunk generation feature. Spawns player in small 64 by 64 piece of terrain. New chunks created as the player moves.
-#define CHUNKING_DEMO 1
-
-// Showcases the procedural terrain biomes. Spawns player in a larger 516 by 516 terrain.
-#define TERRAIN_DEMO 0
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
 MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
       m_progLambert(this), m_progFlat(this), m_progInstanced(this),
       m_terrain(this), m_player(glm::vec3(48.f, 129.f, 48.f), m_terrain),
-    m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS)
+    m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS),
+    m_timer()
 {
     // Connect the timer to a function so that when the timer ticks the function is executed
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -43,11 +29,6 @@ MyGL::MyGL(QWidget *parent)
 MyGL::~MyGL() {
     makeCurrent();
     glDeleteVertexArrays(1, &vao);
-}
-
-
-void MyGL::moveMouseToCenter() {
-    QCursor::setPos(this->mapToGlobal(QPoint(width() / 2, height() / 2)));
 }
 
 void MyGL::initializeGL()
@@ -88,14 +69,8 @@ void MyGL::initializeGL()
     // using multiple VAOs, we can just bind one once.
     glBindVertexArray(vao);
 
-#if CHUNKING_DEMO
-    m_terrain.CreateTestSceneChunking();
-#elif PHYSICS_DEMO
-    m_terrain.CreateTestScene();
-#elif TERRAIN_DEMO
-    m_terrain.CreateTestSceneProceduralTerrain();
-#endif
-
+    // initialize starting terrain zones at spawn
+    m_terrain.initializeTerrain();
 }
 
 void MyGL::resizeGL(int w, int h) {
@@ -118,16 +93,12 @@ void MyGL::resizeGL(int w, int h) {
 // all per-frame actions here, such as performing physics updates on all
 // entities in the scene.
 void MyGL::tick() {
-
     //current_time - previously stored time
     float dT = (QDateTime::currentMSecsSinceEpoch() - m_currMSecSinceEpoch) / 1000.0f;
     m_player.tick(dT, m_inputs);
     m_currMSecSinceEpoch = QDateTime::currentMSecsSinceEpoch();
 
-#if !PHYSICS_DEMO
-    glm::ivec2 chunk = playerCurrentChunk();
-    m_terrain.generateChunksInProximity(chunk.x, chunk.y);
-#endif
+    m_terrain.multithreadedWork(m_player.mcr_position, m_player.mcr_positionPrevious);
 
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data
@@ -180,7 +151,8 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
-    m_terrain.draw(-256, 256, -256, 256, &m_progLambert);
+    m_progLambert.setModelMatrix(glm::mat4(1.f));
+    m_terrain.draw(m_player.mcr_position, &m_progLambert);
 }
 
 void MyGL::keyPressEvent(QKeyEvent *e) {
@@ -253,15 +225,17 @@ void MyGL::keyReleaseEvent(QKeyEvent *e) {
         }
 }
 
-void MyGL::mouseMoveEvent(QMouseEvent *e) {
-    // TODO
+void MyGL::moveMouseToCenter() {
+    QCursor::setPos(this->mapToGlobal(QPoint(width() / 2, height() / 2)));
+}
 
+void MyGL::mouseMoveEvent(QMouseEvent *e) {
     //move mouse center to pevents hitting the edges of the screen
     //moveMouseToCenter();
-
+#if 0
     float sensitivity = 0.1f;
-    float dX = (e->position().x() - m_inputs.mouseX) * (width()/360.f);
-    float dY = (e->position().y() - m_inputs.mouseY) * (height()/360.f);
+    float dX = (e->position().x() - m_inputs.mouseX) * (width() / 360.f);
+    float dY = (e->position().y() - m_inputs.mouseY) * (height() / 360.f);
 
     // dX = glm::clamp(dX, -360.0f, 360.0f);
     dY = glm::clamp(dY, -90.0f, 90.0f);
@@ -271,12 +245,11 @@ void MyGL::mouseMoveEvent(QMouseEvent *e) {
 
     m_player.rotateOnRightLocal(-dY * sensitivity);
     m_player.rotateOnUpGlobal(-dX * sensitivity);
-
     moveMouseToCenter();
+#endif
 }
 
 void MyGL::mousePressEvent(QMouseEvent *e) {
-    // TODO
     if (e->button() == Qt::LeftButton) {
         m_player.removeBlock(&m_terrain);
     } else if (e->button() == Qt::RightButton) {

@@ -1,53 +1,72 @@
 #include "terrain.h"
-#include "cube.h"
+#include "blocktypeworker.h"
+#include "vboworker.h"
+
 #include <stdexcept>
 #include <iostream>
+#include <unordered_map>
 
-bool started = false;
+#define TERRAIN_DRAW_RADIUS 1       // (1) 3x3 radius (terrain that is created and drawn)
+#define TERRAIN_CREATE_RADIUS 2     // (2) 5x5 radius (terrain that is created)
 
-// TODO: might go into some sort of constants file
+// util
 
 namespace TerrainConstants {
-    static const std::unordered_map<Direction, glm::ivec2, EnumHash> offsets = {
-            { XPOS, glm::ivec2(16, 0) },
-            { XNEG, glm::ivec2(-16, 0) },
-            { ZPOS, glm::ivec2(0, 16) },
-            { ZNEG, glm::ivec2(0, -16) }
-    };
+
+// NOTE: We are treating +Z as NORTH and +X as WEST
+
+enum Direction {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST,
+    NIL
+};
+
+// the range of our create radius
+const static glm::ivec2 topLeft(TERRAIN_CREATE_RADIUS * 64, TERRAIN_CREATE_RADIUS * 64);
+const static glm::ivec2 bottomLeft(TERRAIN_CREATE_RADIUS * 64, -TERRAIN_CREATE_RADIUS * 64);
+const static glm::ivec2 topRight(-TERRAIN_CREATE_RADIUS * 64, TERRAIN_CREATE_RADIUS * 64);
+const static glm::ivec2 bottomRight(-TERRAIN_CREATE_RADIUS * 64, -TERRAIN_CREATE_RADIUS * 64);
+
+const static glm::ivec2 northVec(0, 64);
+const static glm::ivec2 southVec(0, -64);
+const static glm::ivec2 eastVec(-64, 0);
+const static glm::ivec2 westVec(64, 0);
+
+const static std::unordered_map<Direction, Direction> direction_to_opposite = {
+    { NORTH, SOUTH },
+    { SOUTH, NORTH },
+    { EAST,  WEST },
+    { WEST,  EAST }
+};
+
+const static std::unordered_map<Direction, std::pair<glm::ivec2, glm::ivec2>> direction_to_range = {
+    { NORTH, {topRight, topLeft} },
+    { SOUTH, {bottomRight, bottomLeft} },
+    { EAST,  {bottomRight, topRight} },
+    { WEST,  {bottomLeft, topLeft} }
+};
+
+}
+
+// get terrain zone at specified position
+glm::ivec2 terrainAtXZPos(glm::vec2 p) {
+    return glm::ivec2(64 * glm::ivec2(glm::floor(p / 64.f)));
 }
 
 Terrain::Terrain(OpenGLContext *context)
     : m_chunks(),
     m_generatedTerrain(),
-    m_geomCube(context),
-    mp_context(context)
+    mp_context(context),
+    m_chunksThatHaveBlockData(),
+    m_chunksThatHaveBlockDataLock(),
+    m_chunksThatHaveVBOs(),
+    m_chunksThatHaveVBOsLock()
 {}
 
 Terrain::~Terrain() {
-    m_geomCube.destroyVBOdata();
 }
-
-// generates neighbouring chunks in all directions of specified chunk
-void Terrain::generateChunksInProximity(int x, int z)
-{
-    if (this->hasChunkAt(x, z)) {
-        uPtr<Chunk>& current = this->getChunkAt(x, z);
-        auto neighbours = current->neighbors();
-
-        for (Direction dir : {XPOS, XNEG, ZPOS, ZNEG}) {
-            Chunk *cPtr = neighbours[dir];
-            if (!cPtr) {
-                // Found an entry for this direction
-                glm::ivec2 offset(current->getMinX(), current->getMinZ());
-                offset += TerrainConstants::offsets.at(dir);
-                this->instantiateChunkAt(offset.x, offset.y);
-            }
-        }
-    } else {
-        this->instantiateChunkAt(x, z);
-    }
-}
-
 
 // Combine two 32-bit ints into one 64-bit int
 // where the upper 32 bits are X and the lower 32 bits are Z
@@ -151,6 +170,160 @@ void Terrain::setBlockAt(int x, int y, int z, BlockType t)
     }
 }
 
+void Terrain::multithreadedWork(glm::vec3 playerPosition, glm::vec3 playerPreviousPosition)
+{
+    tryExpansion(playerPosition, playerPreviousPosition);
+    checkThreadResults();
+}
+
+void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
+{   
+    glm::ivec2 currentZone = terrainAtXZPos(glm::vec2(pos.x, pos.z));
+    glm::ivec2 prevZone    = terrainAtXZPos(glm::vec2(posPrev.x, posPrev.z));
+
+    if (currentZone == prevZone) {
+        return;
+    }
+
+    // if the player is stepping into a new zone, we need to spawn threads to create new zones / create VBO data
+
+    TerrainConstants::Direction direction = TerrainConstants::NIL;
+
+    {
+        glm::ivec2 dir = currentZone - prevZone;
+
+        if (dir == TerrainConstants::northVec) {
+            direction = TerrainConstants::NORTH;
+        } else if (dir == TerrainConstants::southVec) {
+            direction = TerrainConstants::SOUTH;
+        } else if (dir == TerrainConstants::eastVec) {
+            direction = TerrainConstants::EAST;
+        } else if (dir == TerrainConstants::westVec) {
+            direction = TerrainConstants::WEST;
+        } else {
+            qCritical() << "Could not discern direction. Something is wrong.";
+            std::exit(-1);
+        }
+    }
+
+    // destroy vbo data of zones that are outside of our radius (the zones in the opposite direction of player)
+    {
+        TerrainConstants::Direction oppositeDirection = TerrainConstants::direction_to_opposite.at(direction);
+        glm::ivec2 min = prevZone + TerrainConstants::direction_to_range.at(oppositeDirection).first;
+        glm::ivec2 max = prevZone + TerrainConstants::direction_to_range.at(oppositeDirection).second;
+
+        for (int x = min.x; x <= max.x; x += 64) {
+            for (int z = min.y; z <= max.y; z += 64) {
+                auto it = m_generatedTerrain.find(toKey(x, z));
+                assert(it != m_generatedTerrain.end());
+                destroyVBOsAtTerrain(x, z);
+            }
+        }
+    }
+
+    glm::ivec2 min = currentZone + TerrainConstants::direction_to_range.at(direction).first;
+    glm::ivec2 max = currentZone + TerrainConstants::direction_to_range.at(direction).second;
+
+    // loop through create radius and check for uncreated zones or zones with chunks without vbo data
+    for (int x = min.x; x <= max.x; x += 64) {
+        for (int z = min.y; z <= max.y; z += 64) {
+            if (m_generatedTerrain.find(toKey(x, z)) == m_generatedTerrain.end()) {
+                m_generatedTerrain.insert(toKey(x, z));
+                std::vector<Chunk*> chunksToFill;
+
+                // fill chunksToFill with new chunks of terrain
+                instantiateChunksAtTerrain(x, z, chunksToFill);
+
+                // spawn blocktype workers
+                BlockTypeWorker* worker = new BlockTypeWorker(
+                    x, z, chunksToFill, &m_chunksThatHaveBlockData, &m_chunksThatHaveBlockDataLock);
+                QThreadPool::globalInstance()->start(worker);
+            } else {
+                // create VBO data for this terrain zone if there isn't already
+                std::vector<Chunk*> chunksWithoutVBO;
+
+                // check for chunks that don't have VBO's for this terrain zone
+                checkForChunksWithoutVBOs(x, z, chunksWithoutVBO);
+
+                // spawn VBO workers
+                for (Chunk* &c : chunksWithoutVBO) {
+                    VBOWorker* worker = new VBOWorker(c, &m_chunksThatHaveVBOs, &m_chunksThatHaveVBOsLock);
+                    QThreadPool::globalInstance()->start(worker);
+                }
+            }
+        }
+    }
+}
+
+void Terrain::checkThreadResults()
+{
+    m_chunksThatHaveBlockDataLock.lock();
+    // spawn VBO workers for chunks
+    for (Chunk* c : m_chunksThatHaveBlockData) {
+        VBOWorker* worker = new VBOWorker(c, &m_chunksThatHaveVBOs, &m_chunksThatHaveVBOsLock);
+        QThreadPool::globalInstance()->start(worker);
+    }
+    // clear chunks list
+    m_chunksThatHaveBlockData.clear();
+    m_chunksThatHaveBlockDataLock.unlock();
+
+    m_chunksThatHaveVBOsLock.lock();
+    // loop through VBO data and send vbo data to GPU
+    for (ChunkVBOData& vbo : m_chunksThatHaveVBOs) {
+        vbo.chunk->createVBOBuffer(vbo.vboDataOpaque, vbo.idxDataOpaque);
+    }
+    // clear vbo list
+    m_chunksThatHaveVBOs.clear();
+    m_chunksThatHaveVBOsLock.unlock();
+}
+
+void Terrain::instantiateChunksAtTerrain(int terrainX, int terrainZ, std::vector<Chunk *> &chunksToFill)
+{
+    // instantiate 4x4 chunks starting from terrain origin terrainX, terrainZ
+    for (int x = terrainX; x < terrainX + 4 * 16; x += 16) {
+        for (int z = terrainZ; z < terrainZ + 4 * 16; z += 16) {
+            chunksToFill.push_back(instantiateChunkAt(x, z));
+        }
+    }
+}
+
+void Terrain::checkForChunksWithoutVBOs(int terrainX, int terrainZ, std::vector<Chunk *> &chunksWithoutVBO)
+{
+    // check 4x4 chunks starting from terrain origin terrainX, terrainZ
+    for (int x = terrainX; x < terrainX + 4 * 16; x += 16) {
+        for (int z = terrainZ; z < terrainZ + 4 * 16; z += 16) {
+            if (hasChunkAt(x, z)) {
+                uPtr<Chunk> &chunk = getChunkAt(x, z);
+                if (chunk->elemCount() == -1) {
+                    chunksWithoutVBO.push_back(chunk.get());
+                }
+            } else {
+                qCritical() << "No chunk found at this terrain zone. Something is wrong.";
+                std::exit(-1);
+            }
+        }
+    }
+}
+
+void Terrain::destroyVBOsAtTerrain(int terrainX, int terrainZ) {
+    // check 4x4 chunks starting from terrain origin terrainX, terrainZ
+    for (int x = terrainX; x < terrainX + 4 * 16; x += 16) {
+        for (int z = terrainZ; z < terrainZ + 4 * 16; z += 16) {
+            if (hasChunkAt(x, z)) {
+                uPtr<Chunk> &chunk = getChunkAt(x, z);
+                if (chunk->elemCount() != -1) {
+                    chunk->destroyVBOdata();
+                } else {
+                    qWarning() << "No VBO data for deletion found for this chunk. Something wrong?";
+                }
+            } else {
+                qCritical() << "No chunk found at this terrain zone. Something is wrong.";
+                std::exit(-1);
+            }
+        }
+    }
+}
+
 void Terrain::generateChunkTerrain(Chunk* chunk) {
     int minX, minZ;
 
@@ -193,17 +366,11 @@ void Terrain::generateChunkTerrain(Chunk* chunk) {
             }
         }
     }
-
-    chunk->createVBOdata();
 }
 
-Chunk* Terrain::instantiateChunkAt(int x, int z, bool isEmpty) {
+Chunk* Terrain::instantiateChunkAt(int x, int z) {
     uPtr<Chunk> chunk = mkU<Chunk>(this->mp_context, x, z);
     Chunk *cPtr = chunk.get();
-
-    if (not isEmpty) {
-        generateChunkTerrain(cPtr);
-    }
 
     m_chunks[toKey(x, z)] = std::move(chunk);
     // Set the neighbor pointers of itself and its neighbors
@@ -227,104 +394,54 @@ Chunk* Terrain::instantiateChunkAt(int x, int z, bool isEmpty) {
     return cPtr;
 }
 
-void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram) {
+void Terrain::drawTerrainZone(int minX, int minZ, ShaderProgram *shaderProgram) {
+    int maxX = minX + 64;
+    int maxZ = minZ + 64;
+
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
-            // WARNING: checking for existing chunk is slow, we should change this once we have proper terrain generation
             if (hasChunkAt(x, z)) {
                 const uPtr<Chunk> &chunk = getChunkAt(x, z);
-                shaderProgram->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(x, 0, z)));
                 shaderProgram->drawInterleaved(*chunk);
             }
         }
     }
 }
 
+void Terrain::draw(glm::vec3 playerPosition, ShaderProgram *shaderProgram) {
+    glm::ivec2 currentZone = terrainAtXZPos(glm::vec2(playerPosition.x, playerPosition.z));
 
-void Terrain::CreateTestScene()
-{
-    // TODO: DELETE THIS LINE WHEN YOU DELETE m_geomCube!
-    m_geomCube.createVBOdata();
+    int radius = 64 * TERRAIN_DRAW_RADIUS;
+    glm::ivec2 min = currentZone - radius;
+    glm::ivec2 max = currentZone + radius;
 
-    std::vector<Chunk*> chunks;
-
-    // Create the Chunks that will
-    // store the blocks for our
-    // initial world space
-    for(int x = 0; x < 64; x += 16) {
-        for(int z = 0; z < 64; z += 16) {
-            Chunk* c = instantiateChunkAt(x, z, true);
-            chunks.push_back(c);
+    for (int x = min.x; x <= max.x; x += 64) {
+        for (int z = min.y; z <= max.y; z += 64) {
+            drawTerrainZone(x, z, shaderProgram);
         }
-    }
-    // Tell our existing terrain set that
-    // the "generated terrain zone" at (0,0)
-    // now exists.
-    m_generatedTerrain.insert(toKey(0, 0));
-
-
-    // Create the basic terrain floor
-    for(int x = 0; x < 64; ++x) {
-        for(int z = 0; z < 64; ++z) {
-            if((x + z) % 2 == 0) {
-                setBlockAt(x, 128, z, STONE);
-            }
-            else {
-                setBlockAt(x, 128, z, DIRT);
-            }
-        }
-    }
-    // Add "walls" for collision testing
-    for(int x = 0; x < 64; ++x) {
-        setBlockAt(x, 129, 0, GRASS);
-        setBlockAt(x, 130, 0, GRASS);
-        setBlockAt(x, 129, 63, GRASS);
-        setBlockAt(0, 130, x, GRASS);
-    }
-
-    // Add a central column
-    for(int y = 129; y < 140; ++y) {
-        setBlockAt(32, y, 32, GRASS);
-    }
-
-    // create vbo data for newly created chunks
-    for (auto &c : chunks) {
-        c->createVBOdata();
     }
 }
 
-void Terrain::CreateTestSceneChunking()
+void Terrain::initializeTerrain()
 {
-    // Create the Chunks that will
-    // store the blocks for our
-    // initial world space
-    for(int x = 0; x < 64; x += 16) {
-        for(int z = 0; z < 64; z += 16) {
-            instantiateChunkAt(x, z);
-        }
-    }
-    // Tell our existing terrain set that
-    // the "generated terrain zone" at (0,0)
-    // now exists.
-    // TODO: ^^^ what the fuck does this mean
-    m_generatedTerrain.insert(toKey(0, 0));
-}
+    int radius = 64 * TERRAIN_CREATE_RADIUS;
+    glm::ivec2 min = glm::ivec2(0, 0) - radius;
+    glm::ivec2 max = glm::ivec2(0, 0) + radius;
 
-void Terrain::CreateTestSceneProceduralTerrain()
-{
-    // Create the Chunks that will
-    // store the blocks for our
-    // initial world space
-    for(int x = -256; x < 256; x += 16) {
-        for(int z = -256; z < 256; z += 16) {
-            instantiateChunkAt(x, z);
+    for (int x = min.x; x <= max.x; x += 64) {
+        for (int z = min.y; z <= max.y; z += 64) {
+            m_generatedTerrain.insert(toKey(x, z));
+            std::vector<Chunk*> chunksToFill;
+
+            // fill chunksToFill with new chunks of terrain
+            instantiateChunksAtTerrain(x, z, chunksToFill);
+
+            // spawn blocktype workers
+            BlockTypeWorker* worker = new BlockTypeWorker(
+                x, z, chunksToFill, &m_chunksThatHaveBlockData, &m_chunksThatHaveBlockDataLock);
+            QThreadPool::globalInstance()->start(worker);
         }
     }
-    // Tell our existing terrain set that
-    // the "generated terrain zone" at (0,0)
-    // now exists.
-    // TODO: ^^^ what the fuck does this mean
-    m_generatedTerrain.insert(toKey(0, 0));
 }
 
 

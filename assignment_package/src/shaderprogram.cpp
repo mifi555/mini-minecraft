@@ -259,14 +259,15 @@ void ShaderProgram::drawInterleaved(Drawable &d)
         }
     }
 
-    d.bindIdx();
-    context->glDrawElements(d.drawMode(), d.elemCount(), GL_UNSIGNED_INT, 0);
+    if (d.bindIdx()) {
+        context->glDrawElements(d.drawMode(), d.elemCount(), GL_UNSIGNED_INT, 0);
 
-    if (attrPos != -1) context->glDisableVertexAttribArray(attrPos);
-    if (attrNor != -1) context->glDisableVertexAttribArray(attrNor);
-    if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
+        if (attrPos != -1) context->glDisableVertexAttribArray(attrPos);
+        if (attrNor != -1) context->glDisableVertexAttribArray(attrNor);
+        if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
 
-    context->printGLErrorLog();
+        context->printGLErrorLog();
+    }
 }
 
 char* ShaderProgram::textFileRead(const char* fileName) {
