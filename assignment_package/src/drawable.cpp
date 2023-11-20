@@ -23,7 +23,8 @@ void Drawable::destroyVBOdata()
     mp_context->glDeleteBuffers(1, &m_bufNor);
     mp_context->glDeleteBuffers(1, &m_bufCol);
     mp_context->glDeleteBuffers(1, &m_bufInterleaved);
-    m_idxGenerated = m_posGenerated = m_norGenerated = m_colGenerated = false;
+    mp_context->glDeleteBuffers(1, &m_bufUV);
+    m_idxGenerated = m_posGenerated = m_norGenerated = m_colGenerated = m_UVGenerated = false;
     m_count = -1;
 }
 
