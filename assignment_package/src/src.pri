@@ -2,11 +2,14 @@ INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
 SOURCES += \
+    $$PWD/la.cpp \
     $$PWD/main.cpp \
     $$PWD/mainwindow.cpp \
     $$PWD/mygl.cpp \
     $$PWD/postprocessshader.cpp \
     $$PWD/scene/blocktypeworker.cpp \
+    $$PWD/scene/framebuffer.cpp \
+    $$PWD/scene/quad.cpp \
     $$PWD/scene/vboworker.cpp \
     $$PWD/shaderprogram.cpp \
     $$PWD/drawable.cpp \
@@ -21,11 +24,14 @@ SOURCES += \
     $$PWD/scene/chunk.cpp
 
 HEADERS += \
+    $$PWD/la.h \
     $$PWD/mainwindow.h \
     $$PWD/mygl.h \
     $$PWD/postprocessshader.h \
     $$PWD/scene/blocktypeworker.h \
     $$PWD/scene/chunkconstants.h \
+    $$PWD/scene/framebuffer.h \
+    $$PWD/scene/quad.h \
     $$PWD/scene/vboworker.h \
     $$PWD/shaderprogram.h \
     $$PWD/drawable.h \
