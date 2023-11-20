@@ -108,10 +108,8 @@ public:
     static glm::vec3 random3(glm::vec3 coords);
     static float surflet(glm::vec2 point, glm::vec2 gridPoint);
     static float perlinNoise(glm::vec2 coords);
-
-    static float perlinNoise3D(glm::vec3 p);  // TODO:
-    static float surflet3D(glm::vec3 p, glm::vec3 gridPoint); // TODO:
-
+    static float perlinNoise3D(glm::vec3 p);
+    static float surflet3D(glm::vec3 p, glm::vec3 gridPoint);
     static float worleyNoise(glm::vec2 coords);
 
     // terrain generators
