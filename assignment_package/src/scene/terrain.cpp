@@ -202,7 +202,7 @@ void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
             direction = TerrainConstants::WEST;
         } else {
             qCritical() << "Could not discern direction:" << glm::to_string(dir).c_str();
-            return
+            return;
         }
     }
 
@@ -215,8 +215,9 @@ void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
         for (int x = min.x; x <= max.x; x += 64) {
             for (int z = min.y; z <= max.y; z += 64) {
                 auto it = m_generatedTerrain.find(toKey(x, z));
-                assert(it != m_generatedTerrain.end());
-                destroyVBOsAtTerrain(x, z);
+                if (it != m_generatedTerrain.end()) {
+                    destroyVBOsAtTerrain(x, z);
+                }
             }
         }
     }
