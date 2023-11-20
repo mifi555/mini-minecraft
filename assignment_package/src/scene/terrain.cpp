@@ -7,7 +7,7 @@
 #include <unordered_map>
 
 #define TERRAIN_DRAW_RADIUS 1       // (1) 3x3 radius (terrain that is created and drawn)
-#define TERRAIN_CREATE_RADIUS 2     // (2) 5x5 radius (terrain that is created)
+#define TERRAIN_CREATE_RADIUS 2    // (2) 5x5 radius (terrain that is created)
 
 // util
 
@@ -201,8 +201,8 @@ void Terrain::tryExpansion(glm::vec3 pos, glm::vec3 posPrev)
         } else if (dir == TerrainConstants::westVec) {
             direction = TerrainConstants::WEST;
         } else {
-            qCritical() << "Could not discern direction. Something is wrong.";
-            std::exit(-1);
+            qCritical() << "Could not discern direction:" << glm::to_string(dir).c_str();
+            return
         }
     }
 
