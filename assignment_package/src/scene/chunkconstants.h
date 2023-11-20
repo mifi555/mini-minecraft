@@ -70,13 +70,16 @@ namespace ChunkConstants {
     }};
 
     const static std::unordered_map<BlockType, glm::vec4> blocktype_to_color {
-            { GRASS, glm::vec4(0.0431f, 0.51373f, 0.23137f, 1.f) },
-            { DIRT,  glm::vec4(0.5373f, 0.3176f, 0.0392f, 1.f) },
-            { STONE, glm::vec4(0.27f, 0.3568f, 0.3804f, 1.f) },
-            { WATER, glm::vec4(0.04706f, 0.3647f, 0.5216f, 1.f) },
-            { SNOW, glm::vec4(1.f, 1.f, 1.f, 1.f) },
-            { EMPTY, glm::vec4(1.f)                }
-        };
+        { GRASS, glm::vec4(0.0431f, 0.51373f, 0.23137f, 1.f) },
+        { DIRT,  glm::vec4(0.5373f, 0.3176f, 0.0392f, 1.f) },
+        { STONE, glm::vec4(0.27f, 0.3568f, 0.3804f, 1.f) },
+        { WATER, glm::vec4(0.04706f, 0.3647f, 0.5216f, 1.f) },
+        { SNOW, glm::vec4(1.f, 1.f, 1.f, 1.f) },
+        { LAVA, glm::vec4(1.f, 0.4f, 0.f, 1.f) },
+        { BEDROCK, glm::vec4(0.f, 0.f, 0.f, 1.f) },
+        { SAND, glm::vec4(0.96471f, 0.84314f, 0.6902f, 1.f) },
+        { EMPTY, glm::vec4(1.f)                }
+    };
 
 } // namespace constants
 

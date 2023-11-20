@@ -338,30 +338,58 @@ void Terrain::generateChunkTerrain(Chunk* chunk) {
             float grass = grasslandsYValue(glm::vec2(worldPos[0], worldPos[1]));
             float mountains = mountainsYValue(glm::vec2(worldPos[0], worldPos[1]));
             float t = biomeBlender(glm::vec2(minX + x, minZ + z));
-            t = glm::smoothstep(0.55f, 0.45f, t);
+            t = glm::smoothstep(0.6f, 0.4f, t);
             int yMax = glm::mix(grass, mountains, t);
 
             yMax = int(glm::clamp(float(yMax), 0.f, 255.f));
 
             for (int y = 0; y < yMax + 1; y++) {
-                // Stone layer.
-                if (y <= 128) {
+                // Bedrock layer.
+                if (y == 0) {
+                    chunk->setBlockAt(x, y, z, BEDROCK);
+                    // Lava flow - mountains biome.
+                } else if ((yMax == 160 && y == 160) || (yMax == 175 && y == 175) || (yMax == 190 && y == 190)) {
+                    chunk->setBlockAt(x, y, z, LAVA);
+                    // Stone layer.
+                } else if (y <= 128) {
                     chunk->setBlockAt(x, y, z, STONE);
-                // Water pools.
-                } else if (y > 128 && yMax <= 129 && y == yMax) {
-                    chunk->setBlockAt(x, y, z, WATER);
-                // Dirt layer - grass biome and pools.
+                    // Water pools.
+                } else if (y > 128 && yMax <= 133) {
+                    // Sand layer.
+                    chunk->setBlockAt(x, y, z, SAND);
+
+                    if (y == yMax) {
+                        for (int i = y + 1; i <= 134; i++) {
+                            chunk->setBlockAt(x, i, z, WATER);
+                        }
+                    }
+                    // Dirt layer - grass biome and pools.
                 } else if (y > 128 && yMax <= 150 && y < yMax) {
                     chunk->setBlockAt(x, y, z, DIRT);
-                // Grass layer.
+                    // Grass layer.
                 } else if (y > 128 && yMax <= 150 && y == yMax) {
                     chunk->setBlockAt(x, y, z, GRASS);
-                // Snow layer - mountains biome.
+                    // Snow layer - mountains biome.
                 } else if (y > 200 && y == yMax) {
                     chunk->setBlockAt(x, y, z, SNOW);
-                // Mountains layer.
+                    // Mountains layer.
                 } else if (y > 128 && yMax > 150) {
                     chunk->setBlockAt(x, y, z, STONE);
+                }
+            }
+
+            // Cave generation.
+            for (int y = 1; y <= 128; y++) {
+                float noise3D = perlinNoise3D(glm::vec3(worldPos[0], y, worldPos[1]));
+
+                if (noise3D < 0.f) {
+                    // Lava layer.
+                    if (y < 25) {
+                        chunk->setBlockAt(x, y, z, LAVA);
+                        // Set empty for cave section.
+                    } else {
+                        chunk->setBlockAt(x, y, z, EMPTY);
+                    }
                 }
             }
         }
@@ -490,17 +518,28 @@ glm::vec2 Terrain::random2(glm::vec2 coords) {
     return glm::normalize(2.f * glm::fract(glm::sin(glm::vec2(glm::dot(coords, glm::vec2(127.1,311.7)), glm::dot(coords, glm::vec2(269.5,183.3)))) * float(43758.5453)) - 1.f);
 }
 
-float Terrain::surflet(glm::vec2 point, glm::vec2 gridPoint) {
+glm::vec3 Terrain::random3(glm::vec3 coords) {
+    float j = 4096.0*sin(glm::dot(coords , glm::vec3(17.0, 59.4, 15.0)));
+    glm::vec3 r;
+    r.z = glm::fract(512.0*j);
+    j *= .125;
+    r.x = glm::fract(512.0*j);
+    j *= .125;
+    r.y = glm::fract(512.0*j);
+    return r-0.5f;
+}
+
+float Terrain::surflet(glm::vec2 p, glm::vec2 gridPoint) {
     // Compute falloff function by converting linear distance to a polynomial (quintic smootherstep function)
-    float distX = abs(point.x - gridPoint.x);
-    float distY = abs(point.y - gridPoint.y);
+    float distX = abs(p.x - gridPoint.x);
+    float distY = abs(p.y - gridPoint.y);
     float tX = 1 - 6 * pow(distX, 5.0) + 15 * pow(distX, 4.0) - 10 * pow(distX, 3.0);
     float tY = 1 - 6 * pow(distY, 5.0) + 15 * pow(distY, 4.0) - 10 * pow(distY, 3.0);
 
     // Get the random vector for the grid point
     glm::vec2 gradient = random2(gridPoint);
     // Get the vector from the grid point to P
-    glm::vec2 diff = point - gridPoint;
+    glm::vec2 diff = p - gridPoint;
     // Get the value of our height field by dotting grid->P with our gradient
     float height = glm::dot(diff, gradient);
     // Scale our height field (i.e. reduce it) by our polynomial falloff function
@@ -514,7 +553,49 @@ float Terrain::perlinNoise(glm::vec2 coords) {
     glm::vec2 coordsXHYH = coordsXLYL + glm::vec2(1,1);
     glm::vec2 coordsXLYH = coordsXLYL + glm::vec2(0,1);
 
-    return surflet(coords, coordsXLYL) + surflet(coords, coordsXHYL) + surflet(coords, coordsXHYH) + surflet(coords, coordsXLYH);
+    return surflet(coords, coordsXLYL) + surflet(coords, coordsXHYL)
+           + surflet(coords, coordsXHYH) + surflet(coords, coordsXLYH);
+}
+
+float Terrain::perlinNoise3D(glm::vec3 p)
+{
+    float surfletSum = 0.f;
+
+    p[0] = p[0] * 0.03f;
+    p[1] = p[1] * 0.07f;
+    p[2] = p[2] * 0.03f;
+
+    // Iterate over the four integer corners surrounding uv
+    for(int dx = 0; dx <= 1; ++dx) {
+        for(int dy = 0; dy <= 1; ++dy) {
+            for(int dz = 0; dz <= 1; ++dz) {
+                surfletSum += surflet3D(p, glm::floor(p) + glm::vec3(dx, dy, dz));
+            }
+        }
+    }
+
+    return surfletSum;
+}
+
+float Terrain::surflet3D(glm::vec3 p, glm::vec3 gridPoint)
+{
+    // Compute the distance between p and the grid point along each axis, and warp it with a
+    // quintic function so we can smooth our cells
+    glm::vec3 t2 = glm::abs(p - gridPoint);
+    glm::vec3 t = glm::vec3(1.f) -
+                  6.f * glm::vec3(pow(t2[0], 5.f), pow(t2[1], 5.f), pow(t2[2], 5.f)) +
+                  15.f * glm::vec3(pow(t2[0], 4.f), pow(t2[1], 4.f), pow(t2[2], 4.f)) -
+                  10.f * glm::vec3(pow(t2[0], 3.f), pow(t2[1], 3.f), pow(t2[2], 3.f));
+    // Get the random vector for the grid point (assume we wrote a function random2
+    // that returns a vec2 in the range [0, 1])
+    glm::vec3 gradient = random3(gridPoint) * 2.f - glm::vec3(1.f, 1.f, 1.f);
+    // Get the vector from the grid point to P
+    glm::vec3 diff = p - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = glm::dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+
+    return height * t.x * t.y * t.z;
 }
 
 float Terrain::worleyNoise(glm::vec2 coords) {
@@ -557,35 +638,33 @@ float Terrain::worleyNoise(glm::vec2 coords) {
 }
 
 float Terrain::grasslandsYValue(glm::vec2 coords) {
-    glm::vec2 xz = glm::vec2(coords[0], coords[1]);
-    float h = 0, amp = 0.5, freq = 128, yValue = 1;
+    float h = 0, amp = 0.5, freq = 95, yValue = 1;
 
     // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
-        glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
-        float h1 = (perlinNoise((xz + offset * 25.f) / freq) * perlinNoise((xz + offset * 25.f) / freq));
+        glm::vec2 offset = glm::vec2(fbm(coords / 256.f), fbm(coords / 300.f) + 1000);
+        float h1 = (perlinNoise((coords + offset * 25.f) / freq) * perlinNoise((coords + offset * 25.f) / freq));
 
         h += h1 * amp;
         amp *= 0.5;
         freq *= 0.5;
     }
 
-    yValue = floor(125 + h * 200);
+    yValue = floor(124 + h * 200);
 
     // Enforce height bounds.
-    yValue = glm::clamp(yValue, 129.f, 150.f);
+    yValue = glm::clamp(yValue, 129.f, 255.f);
 
     return yValue;
 }
 
 float Terrain::mountainsYValue(glm::vec2 coords) {
-    glm::vec2 xz = glm::vec2(coords[0], coords[1]);
     float h = 0, amp = 0.5, freq = 128, yValue = 1;
 
     // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
-        glm::vec2 offset = glm::vec2(fbm(xz / 256.f), fbm(xz / 300.f) + 1000);
-        float h1 = sin(perlinNoise((xz + offset * 45.f) / freq)) * perlinNoise((xz + offset * 45.f) / freq) * 5;
+        glm::vec2 offset = glm::vec2(fbm(coords / 256.f), fbm(coords / 300.f) + 1000);
+        float h1 = tan(perlinNoise((coords + offset * 45.f) / freq)) * perlinNoise((coords + offset * 45.f) / freq) * 5;
 
         h += h1 * amp;
         amp *= 0.5;
@@ -601,5 +680,5 @@ float Terrain::mountainsYValue(glm::vec2 coords) {
 }
 
 float Terrain::biomeBlender(glm::vec2 coords) {
-    return 0.5 * (perlinNoise(coords / 512.f) + 1.f);
+    return 0.5 * (perlinNoise(coords / 364.f) + 1.f);
 }
