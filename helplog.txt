@@ -1,3 +1,6 @@
+Milestone 1
+-----------
+
 Michael
 -------
 
@@ -23,3 +26,26 @@ Joseph
 11/9 5:35PM - Got help / feedback from Jackie on biome style and noise functions.
 
 11/10 11:44AM - Got feedback from Insha on terrain presentation.
+
+Milestone 2
+-----------
+
+Joseph
+------
+
+11/13 4:06PM - Got help from Dineth with some clarifying questions on caves.
+
+11/13 4:25PM - Looked up random vec3 function.
+https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
+
+11/13 11:00AM - Got help from Nick with Perlin Noise issue and post processing clarifications.
+
+11/15 3:19PM - Got help from Dineth and Professor Adam with cave noise uniformity clarifications.
+
+11/15 6:34PM - Got help from Joanna with post-process shader issue. Need to look more into the issue, Joanna thinks it's due to member variable initiations.
+
+11/16 12:29PM - Got help from Thomas with post-process shader issue, problem was with the frame buffer not being resized in resizeGL.
+
+11/16 5:31PM - Got feedback from Nick on shaders and caves.
+
+11/20 5:02PM - Got help with some clarifying questions from Dineth for my submission and feedback on my caves and shader implementations.
