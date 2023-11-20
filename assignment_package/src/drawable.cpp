@@ -18,13 +18,36 @@ Drawable::~Drawable()
 
 void Drawable::destroyVBOdata()
 {
-    mp_context->glDeleteBuffers(1, &m_bufIdx);
-    mp_context->glDeleteBuffers(1, &m_bufPos);
-    mp_context->glDeleteBuffers(1, &m_bufNor);
-    mp_context->glDeleteBuffers(1, &m_bufCol);
-    mp_context->glDeleteBuffers(1, &m_bufInterleaved);
-    mp_context->glDeleteBuffers(1, &m_bufUV);
-    m_idxGenerated = m_posGenerated = m_norGenerated = m_colGenerated = m_UVGenerated = false;
+    if (m_idxGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufIdx);
+        m_idxGenerated = false;
+    }
+
+    if (m_posGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufPos);
+        m_posGenerated = false;
+    }
+
+    if (m_norGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufNor);
+        m_norGenerated = false;
+    }
+
+    if (m_colGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufCol);
+        m_colGenerated = false;
+    }
+
+    if (m_interleavedGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufInterleaved);
+        m_interleavedGenerated = false;
+    }
+
+    if (m_UVGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufUV);
+        m_UVGenerated = false;
+    }
+
     m_count = -1;
 }
 

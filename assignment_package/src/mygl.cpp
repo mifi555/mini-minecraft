@@ -12,9 +12,16 @@ MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
       m_progLambert(this), m_progFlat(this), m_progInstanced(this),
+      m_progWater(this),
+      m_progLava(this),
+      m_renderedTexture(-1),
+      m_time(0.f),
+      m_frameBuffer(this, this->width(), this->height(), this->devicePixelRatio()),
+      m_quad(this),
+      vao(-1),
       m_terrain(this), m_player(glm::vec3(48.f, 129.f, 48.f), m_terrain),
-    m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS),
-    m_timer()
+      m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS),
+      m_timer()
 {
     // Connect the timer to a function so that when the timer ticks the function is executed
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -52,12 +59,22 @@ void MyGL::initializeGL()
 
     //Create the instance of the world axes
     m_worldAxes.createVBOdata();
+    m_quad.createVBOdata();
+    m_frameBuffer.create();
 
     // Create and set up the diffuse shader
     m_progLambert.create(":/glsl/lambert.vert.glsl", ":/glsl/lambert.frag.glsl");
     // Create and set up the flat lighting shader
     m_progFlat.create(":/glsl/flat.vert.glsl", ":/glsl/flat.frag.glsl");
     m_progInstanced.create(":/glsl/instanced.vert.glsl", ":/glsl/lambert.frag.glsl");
+
+    // Create and set up post-processing shaders.
+    m_progWater.create(":/glsl/passthrough.vert.glsl", ":/glsl/water.frag.glsl");
+    m_progLava.create(":/glsl/passthrough.vert.glsl", ":/glsl/lava.frag.glsl");
+
+    m_progWater.setupMemberVars();
+    m_progLava.setupMemberVars();
+
 
     // Set a color with which to draw geometry.
     // This will ultimately not be used when you change
@@ -83,6 +100,9 @@ void MyGL::resizeGL(int w, int h) {
 
     m_progLambert.setViewProjMatrix(viewproj);
     m_progFlat.setViewProjMatrix(viewproj);
+
+    m_frameBuffer.resize(this->width() * this->devicePixelRatio(), this->height() * this->devicePixelRatio(), 1);
+    m_frameBuffer.create();
 
     printGLErrorLog();
 }
@@ -127,16 +147,24 @@ void MyGL::sendPlayerDataToGUI() const {
     emit sig_sendPlayerTerrainZone(QString::fromStdString("( " + std::to_string(zone.x) + ", " + std::to_string(zone.y) + " )"));
 }
 
-// This function is called whenever update() is called.
-// MyGL's constructor links update() to a timer that fires 60 times per second,
-// so paintGL() called at a rate of 60 frames per second.
-void MyGL::paintGL() {
+void MyGL::prepFrameBuffer() {
+    // Render to our framebuffer rather than the viewport.
+    m_frameBuffer.bindFrameBuffer();
+    printGLErrorLog();
+
+    // Render on the whole framebuffer, complete from the lower left corner to the upper right
+    glViewport(0, 0,this->width() * this->devicePixelRatio(), this->height() * this->devicePixelRatio());
+
     // Clear the screen so that we only see newly drawn images
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 
+void MyGL::render3DScene() {
     m_progFlat.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progLambert.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progInstanced.setViewProjMatrix(m_player.mcr_camera.getViewProj());
+    m_progWater.setViewProjMatrix(m_player.mcr_camera.getViewProj());
+    m_progLava.setViewProjMatrix(m_player.mcr_camera.getViewProj());
 
     renderTerrain();
 
@@ -145,6 +173,58 @@ void MyGL::paintGL() {
     m_progFlat.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progFlat.draw(m_worldAxes);
     glEnable(GL_DEPTH_TEST);
+}
+
+void MyGL::performPostprocessRenderPass() {
+    // Tell OpenGL to render to the viewport's frame buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, this->defaultFramebufferObject());
+
+    // Render on the whole framebuffer, complete from the lower left corner to the upper right
+    glViewport(0,0,this->width() * this->devicePixelRatio(), this->height() * this->devicePixelRatio());
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_frameBuffer.bindToTextureSlot(1);
+
+    // Display water.
+    if (m_player.m_water == true) {
+        m_progWater.setModelMatrix(glm::mat4());
+        m_progWater.setViewProjMatrix(m_player.mcr_camera.getViewProj());
+
+        // Set our texture sampler to user Texture Unit 1
+        this->glUniform1i(m_progWater.unifSampler2D, m_frameBuffer.getTextureSlot());
+
+        m_progWater.draw(m_quad, m_frameBuffer.getTextureSlot());
+        m_progWater.setTime(m_time);
+        // Display lava.
+    } else if (m_player.m_lava == true) {
+        m_progLava.setModelMatrix(glm::mat4());
+        m_progLava.setViewProjMatrix(m_player.mcr_camera.getViewProj());
+
+        // Set our texture sampler to user Texture Unit 1
+        this->glUniform1i(m_progLava.unifSampler2D, m_frameBuffer.getTextureSlot());
+
+        m_progLava.draw(m_quad, m_frameBuffer.getTextureSlot());
+        m_progLava.setTime(m_time);
+    }
+
+    m_time++;
+}
+
+
+// This function is called whenever update() is called.
+// MyGL's constructor links update() to a timer that fires 60 times per second,
+// so paintGL() called at a rate of 60 frames per second.
+void MyGL::paintGL() {
+    if (m_player.m_water == true || m_player.m_lava == true) {
+        prepFrameBuffer();
+    }
+
+    render3DScene();
+
+    if (m_player.m_water == true || m_player.m_lava == true) {
+        performPostprocessRenderPass();
+    }
 }
 
 // TODO: Change this so it renders the nine zones of generated
@@ -189,6 +269,8 @@ void MyGL::keyPressEvent(QKeyEvent *e) {
     } else if (e->key() == Qt::Key_F) {
         //toggle flight mode on/off
         m_player.toggleFlightMode();
+        m_player.m_water = false;
+        m_player.m_lava = false;
     }
   
     //keys E and Q are specific to flightmode
