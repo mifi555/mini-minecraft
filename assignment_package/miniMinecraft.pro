@@ -48,6 +48,12 @@ address_sanitizer {
     QMAKE_LFLAGS += -fsanitize=address
 }
 
-HEADERS +=
+HEADERS += \
+    src/la.h \
+    src/scene/framebuffer.h \
+    src/scene/quad.h
 
-SOURCES +=
+SOURCES += \
+    src/la.cpp \
+    src/scene/framebuffer.cpp \
+    src/scene/quad.cpp

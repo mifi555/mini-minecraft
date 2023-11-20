@@ -17,6 +17,8 @@ class MyGL : public OpenGLContext
 {
     Q_OBJECT
 private:
+    friend ShaderProgram;
+
     WorldAxes m_worldAxes; // A wireframe representation of the world axes. It is hard-coded to sit centered at (32, 128, 32).
     ShaderProgram m_progLambert;// A shader program that uses lambertian reflection
     ShaderProgram m_progFlat;// A shader program that uses "flat" reflection (no shadowing at all)

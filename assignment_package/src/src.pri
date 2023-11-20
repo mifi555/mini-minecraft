@@ -5,6 +5,7 @@ SOURCES += \
     $$PWD/main.cpp \
     $$PWD/mainwindow.cpp \
     $$PWD/mygl.cpp \
+    $$PWD/postprocessshader.cpp \
     $$PWD/scene/blocktypeworker.cpp \
     $$PWD/scene/vboworker.cpp \
     $$PWD/shaderprogram.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
 HEADERS += \
     $$PWD/mainwindow.h \
     $$PWD/mygl.h \
+    $$PWD/postprocessshader.h \
     $$PWD/scene/blocktypeworker.h \
     $$PWD/scene/chunkconstants.h \
     $$PWD/scene/vboworker.h \

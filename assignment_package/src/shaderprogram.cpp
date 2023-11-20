@@ -10,6 +10,7 @@ ShaderProgram::ShaderProgram(OpenGLContext *context)
     : vertShader(), fragShader(), prog(),
       attrPos(-1), attrNor(-1), attrCol(-1),
       unifModel(-1), unifModelInvTr(-1), unifViewProj(-1), unifColor(-1),
+      unifSampler2D(-1), unifTime(-1),
       context(context)
 {}
 
@@ -60,6 +61,12 @@ void ShaderProgram::create(const char *vertfile, const char *fragfile)
 
     // Get the handles to the variables stored in our shaders
     // See shaderprogram.h for more information about these variables
+    setupMemberVars();
+}
+
+void ShaderProgram::setupMemberVars()
+{
+    useMe();
 
     attrPos = context->glGetAttribLocation(prog, "vs_Pos");
     attrNor = context->glGetAttribLocation(prog, "vs_Nor");
@@ -179,6 +186,11 @@ void ShaderProgram::draw(Drawable &d)
     if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
 
     context->printGLErrorLog();
+}
+
+void ShaderProgram::draw(Drawable &d, int textureSlot)
+{
+    qCritical() << "draw w/ texture slot NOT IMPLEMENTED";
 }
 
 void ShaderProgram::drawInstanced(InstancedDrawable &d)
@@ -343,5 +355,15 @@ void ShaderProgram::printLinkInfoLog(int prog)
         context->glGetProgramInfoLog(prog, infoLogLen, &charsWritten, infoLog);
         qDebug() << "LinkInfoLog:" << "\n" << infoLog << "\n";
         delete [] infoLog;
+    }
+}
+
+void ShaderProgram::setTime(int t)
+{
+    useMe();
+
+    if(unifTime != -1)
+    {
+        context->glUniform1i(unifTime, t);
     }
 }
