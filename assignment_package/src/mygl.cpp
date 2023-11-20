@@ -232,7 +232,6 @@ void MyGL::moveMouseToCenter() {
 void MyGL::mouseMoveEvent(QMouseEvent *e) {
     //move mouse center to pevents hitting the edges of the screen
     //moveMouseToCenter();
-#if 0
     float sensitivity = 0.1f;
     float dX = (e->position().x() - m_inputs.mouseX) * (width() / 360.f);
     float dY = (e->position().y() - m_inputs.mouseY) * (height() / 360.f);
@@ -245,6 +244,9 @@ void MyGL::mouseMoveEvent(QMouseEvent *e) {
 
     m_player.rotateOnRightLocal(-dY * sensitivity);
     m_player.rotateOnUpGlobal(-dX * sensitivity);
+
+    // for some reason this doesn't work on my Win11 machine -- Mikey
+#ifdef __APPLE__
     moveMouseToCenter();
 #endif
 }

@@ -86,7 +86,7 @@ void OpenGLContext::printGLErrorLog()
 #ifndef __APPLE__
         // Don't do this on OS X.
         // http://lists.apple.com/archives/mac-opengl/2012/Jul/msg00038.html
-        throw;
+        std::exit(666);
 #endif
     }
 }

@@ -32,8 +32,10 @@ void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
     //glm::mat3 groundRotation = glm::mat3(glm::eulerAngleY(glm::radians(inputs.mouseX)));
     //m_camera.setRotation(cameraRotation);
 
+    constexpr static float bump = 4.f;
+
     //distinguish between flight and ground mode
-    float acceleration_scalar = 90.0f;
+    float acceleration_scalar = bump * 90.0f;
 
     m_acceleration = glm::vec3(0,0,0);
     //FLIGHT MODE ON: player begins in flight mode

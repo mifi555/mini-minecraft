@@ -54,8 +54,6 @@ private:
     std::vector<ChunkVBOData> m_chunksThatHaveVBOs;
     QMutex m_chunksThatHaveVBOsLock;
 
-    void generateChunkTerrain(Chunk *chunk);
-
     void tryExpansion(glm::vec3 pos, glm::vec3 posPrev);
     void checkThreadResults();
     void instantiateChunksAtTerrain(int x, int z, std::vector<Chunk *>& chunksToFill);
@@ -98,19 +96,22 @@ public:
     // creates and draws terrain zones at player spawn
     void initializeTerrain();
 
+    // generate terrain block data
+    static void generateChunkTerrain(Chunk *chunk);
+
     // Various noise functions and helpers used for terrain biome generation.
 
-    glm::vec2 smoothF(glm::vec2 coords);
-    float noise(glm::vec2 coords);
-    float fbm(glm::vec2 coords);
-    glm::vec2 random2(glm::vec2 coords);
-    float surflet(glm::vec2 point, glm::vec2 gridPoint);
-    float perlinNoise(glm::vec2 coords);
-    float worleyNoise(glm::vec2 coords);
+    static glm::vec2 smoothF(glm::vec2 coords);
+    static float noise(glm::vec2 coords);
+    static float fbm(glm::vec2 coords);
+    static glm::vec2 random2(glm::vec2 coords);
+    static float surflet(glm::vec2 point, glm::vec2 gridPoint);
+    static float perlinNoise(glm::vec2 coords);
+    static float worleyNoise(glm::vec2 coords);
 
     // terrain generators
 
-    float grasslandsYValue(glm::vec2 coords);
-    float mountainsYValue(glm::vec2 coords);
-    float biomeBlender(glm::vec2 coords);
+    static float grasslandsYValue(glm::vec2 coords);
+    static float mountainsYValue(glm::vec2 coords);
+    static float biomeBlender(glm::vec2 coords);
 };

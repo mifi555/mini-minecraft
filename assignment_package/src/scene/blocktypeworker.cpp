@@ -1,6 +1,7 @@
 #include "blocktypeworker.h"
+#include "terrain.h"
 
-#define DEBUG
+#define DEBUG 0
 
 BlockTypeWorker::BlockTypeWorker(
     int x,
@@ -16,7 +17,7 @@ BlockTypeWorker::BlockTypeWorker(
 }
 
 void BlockTypeWorker::run() {
-#ifdef DEBUG
+#if DEBUG
     for (Chunk* &chunk : m_chunksToFill) {
 
         // flat terrain
@@ -44,6 +45,11 @@ void BlockTypeWorker::run() {
         mp_completedChunksLock->unlock();
     }
 #else
-    // TODO: terrain gen code here:
+    for (Chunk* &chunk : m_chunksToFill) {
+        Terrain::generateChunkTerrain(chunk);
+        mp_completedChunksLock->lock();
+        mp_completedChunks->insert(chunk);
+        mp_completedChunksLock->unlock();
+    }
 #endif
 }
