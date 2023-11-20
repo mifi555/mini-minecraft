@@ -83,23 +83,40 @@ _Difficulties + Potential improvements_
 **Joseph: Cave Systems**
 
 _3D Noise Functions_
+
 - Implemented 3D Perlin Noise and Surflet functions with component scaling for cave generation.
+
 _Underground Cave System_
+
 - Utilized 3D Perlin Noise to shape and implement an underground cave system with interconnected caves, lava at the lowest depths, and unbreakable bedrock as the base level for the world.
 - Initially had some difficulties with noise uniformity and the caves not looking natural, was able to fix the issue by scaling the Perlin Noise inputs.
+
 _Frame Buffer Rendering_
+
 - Set up frame buffer class and created helper functions to bind the frame buffer, edit the viewport for rendering on the entire frame buffer, and clear the screen.
+
 _PostProcessShader and Quad Classes_
+
 - Added PostProcessShader and Quad classes for use with post-process rendering, including various functions and handles for managing the data passed to the vertex and fragment shaders.
+
 _Post-Process Render Pass_
+
 - Created a helper function to perform a post-process render pass that displays a blue or red tinge whenever the player is in water or lava respectively.
 - Had some trouble throughout the post-process rendering portion of the assignment due to all the files involved, but Adam's lecture and the logic in HW4 really helped me wrap my head around everything.
+
 _Water and Lava Fragment Shaders_
+
 - Created water and lava post-process fragment shaders that display a tinge of blue and red respectively. These are currently placeholder shaders and I will be replacing them for the Post-process Camera Overlay task in Milestone 3.
+
 _PassThrough Vertex Shader_
+
 - Added a vertex shader to pass vertex data to the water and lava fragment shaders without altering the data.
+
 _Player Swimming Movement_
+
 - Added members to the player class to indicate when the player is in water or lava and adjusted various movement functions to check what block the player is currently standing in.
 - Changed the acceleration and gravity values so that they are slowed when the player is in water or lava, reducing the player's movement and fall speeds in order to simulate swimming.
+
 _Improved Terrain_
+
 - Improved upon the previous terrain by reducing the amount of water, making the islands more visually appealing, adding a layer of sand below the water and layering the water on top of it, and adding lava streams to the mountains.
