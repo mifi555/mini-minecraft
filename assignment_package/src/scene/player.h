@@ -30,6 +30,12 @@ public:
     //boolean flag for flightmode
     bool m_flightMode;
 
+    // Boolean flag for swimming in WATER.
+    bool m_water;
+
+    // Boolean flag for swimming in LAVA.
+    bool m_lava;
+
     Player(glm::vec3 pos, const Terrain &terrain);
     virtual ~Player() override;
 

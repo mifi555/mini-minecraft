@@ -7,6 +7,9 @@
 #include "scene/camera.h"
 #include "scene/terrain.h"
 #include "scene/player.h"
+#include "postprocessshader.h"
+#include "scene/framebuffer.h"
+#include "scene/quad.h"
 
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLShaderProgram>
@@ -17,10 +20,21 @@ class MyGL : public OpenGLContext
 {
     Q_OBJECT
 private:
+    friend ShaderProgram;
+
     WorldAxes m_worldAxes; // A wireframe representation of the world axes. It is hard-coded to sit centered at (32, 128, 32).
     ShaderProgram m_progLambert;// A shader program that uses lambertian reflection
     ShaderProgram m_progFlat;// A shader program that uses "flat" reflection (no shadowing at all)
     ShaderProgram m_progInstanced;// A shader program that is designed to be compatible with instanced rendering
+
+    // ~~~
+    PostProcessShader m_progWater;// A shader program used for post-process water effect rendering.
+    PostProcessShader m_progLava;// A shader program used for post-process lava effect rendering.
+    GLuint m_renderedTexture;
+    int m_time;
+    FrameBuffer m_frameBuffer; // Frame buffer used for scene rendering.
+    Quad m_quad;  // Quadrangle used for post-process rendering.
+    // ~~~
 
     GLuint vao; // A handle for our vertex array object. This will store the VBOs created in our geometry classes.
                 // Don't worry too much about this. Just know it is necessary in order to render geometry.
@@ -35,10 +49,11 @@ private:
 
     QTimer m_timer; // Timer linked to tick(). Fires approximately 60 times per second.
 
-    void moveMouseToCenter(); // Forces the mouse position to the screen's center. You should call this
-                              // from within a mouse move event after reading the mouse movement so that
-                              // your mouse stays within the screen bounds and is always read.
-
+public:
+    void prepFrameBuffer();
+    void render3DScene();
+    void performPostprocessRenderPass();
+    void moveMouseToCenter();
     void sendPlayerDataToGUI() const;
 
     // helper functions

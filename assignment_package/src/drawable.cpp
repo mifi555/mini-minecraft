@@ -2,7 +2,7 @@
 #include <glm_includes.h>
 
 Drawable::Drawable(OpenGLContext* context)
-    : m_count(-1), m_bufIdx(), m_bufPos(), m_bufNor(), m_bufCol(),
+    : m_count(-1), m_bufIdx(-1), m_bufPos(-1), m_bufNor(-1), m_bufCol(-1), m_bufUV(-1),
       m_idxGenerated(false),
       m_posGenerated(false),
       m_norGenerated(false),
@@ -18,12 +18,36 @@ Drawable::~Drawable()
 
 void Drawable::destroyVBOdata()
 {
-    mp_context->glDeleteBuffers(1, &m_bufIdx);
-    mp_context->glDeleteBuffers(1, &m_bufPos);
-    mp_context->glDeleteBuffers(1, &m_bufNor);
-    mp_context->glDeleteBuffers(1, &m_bufCol);
-    mp_context->glDeleteBuffers(1, &m_bufInterleaved);
-    m_idxGenerated = m_posGenerated = m_norGenerated = m_colGenerated = false;
+    if (m_idxGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufIdx);
+        m_idxGenerated = false;
+    }
+
+    if (m_posGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufPos);
+        m_posGenerated = false;
+    }
+
+    if (m_norGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufNor);
+        m_norGenerated = false;
+    }
+
+    if (m_colGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufCol);
+        m_colGenerated = false;
+    }
+
+    if (m_interleavedGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufInterleaved);
+        m_interleavedGenerated = false;
+    }
+
+    if (m_UVGenerated) {
+        mp_context->glDeleteBuffers(1, &m_bufUV);
+        m_UVGenerated = false;
+    }
+
     m_count = -1;
 }
 
@@ -77,6 +101,13 @@ void Drawable::generateInterleaved()
     mp_context->glGenBuffers(1, &m_bufInterleaved);
 }
 
+void Drawable::generateUV()
+{
+    m_UVGenerated = true;
+    // Create a VBO on our GPU and store its handle in bufUV.
+    mp_context->glGenBuffers(1, &m_bufUV);
+}
+
 bool Drawable::bindIdx()
 {
     if(m_idxGenerated) {
@@ -115,6 +146,14 @@ bool Drawable::bindInterleaved()
         mp_context->glBindBuffer(GL_ARRAY_BUFFER, m_bufInterleaved);
     }
     return m_interleavedGenerated;
+}
+
+bool Drawable::bindUV()
+{
+    if(m_UVGenerated){
+        mp_context->glBindBuffer(GL_ARRAY_BUFFER, m_bufUV);
+    }
+    return m_UVGenerated;
 }
 
 InstancedDrawable::InstancedDrawable(OpenGLContext *context)

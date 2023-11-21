@@ -9,24 +9,23 @@ class Drawable
 protected:
     int m_count;     // The number of indices stored in bufIdx.
 
-    // TODO: delete these once we have no use for them using the interleaved VBO method ~~~~~~~~
-
     GLuint m_bufIdx; // A Vertex Buffer Object that we will use to store triangle indices (GLuints)
     GLuint m_bufPos; // A Vertex Buffer Object that we will use to store mesh vertices (vec4s)
     GLuint m_bufNor; // A Vertex Buffer Object that we will use to store mesh normals (vec4s)
     GLuint m_bufCol; // Can be used to pass per-vertex color information to the shader, but is currently unused.
                    // Instead, we use a uniform vec4 in the shader to set an overall color for the geometry
+    GLuint m_bufUV;
 
     bool m_idxGenerated; // Set to TRUE by generateIdx(), returned by bindIdx().
     bool m_posGenerated;
     bool m_norGenerated;
     bool m_colGenerated;
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     GLuint m_bufInterleaved;
 
     bool m_interleavedGenerated;
+
+    bool m_UVGenerated;
 
     OpenGLContext* mp_context; // Since Qt's OpenGL support is done through classes like QOpenGLFunctions_3_2_Core,
                           // we need to pass our OpenGL context to the Drawable in order to call GL functions
@@ -51,12 +50,14 @@ public:
     void generateNor();
     void generateCol();
     void generateInterleaved();
+    void generateUV();
 
     bool bindIdx();
     bool bindPos();
     bool bindNor();
     bool bindCol();
     bool bindInterleaved();
+    bool bindUV();
 };
 
 // A subclass of Drawable that enables the base code to render duplicates of

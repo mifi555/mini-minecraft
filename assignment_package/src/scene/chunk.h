@@ -16,7 +16,7 @@
 // block types, but in the scope of this project we'll never get anywhere near that many.
 enum BlockType : unsigned char
 {
-    EMPTY, GRASS, DIRT, STONE, WATER, SNOW
+    EMPTY, GRASS, DIRT, STONE, WATER, SNOW, LAVA, BEDROCK, SAND
 };
 
 // The six cardinal directions in 3D space
@@ -32,6 +32,19 @@ struct EnumHash {
     size_t operator()(T t) const {
         return static_cast<size_t>(t);
     }
+};
+
+class Chunk;
+
+struct ChunkVBOData {
+    Chunk* chunk;
+    std::vector<GLfloat> vboDataOpaque, vboDataTransparent;
+    std::vector<GLuint> idxDataOpaque, idxDataTransparent;
+
+    ChunkVBOData(Chunk *c) : chunk(c),
+        vboDataOpaque{}, vboDataTransparent{},
+        idxDataOpaque{}, idxDataTransparent{}
+    {}
 };
 
 // One Chunk is a 16 x 256 x 16 section of the world,
@@ -53,16 +66,17 @@ private:
     std::unordered_map<Direction, Chunk*, EnumHash> m_neighbors;
 
 public:
-    // chunk is
     Chunk(OpenGLContext* context, int x, int z);
     BlockType getBlockAt(unsigned int x, unsigned int y, unsigned int z) const;
     BlockType getBlockAt(int x, int y, int z) const;
     void setBlockAt(unsigned int x, unsigned int y, unsigned int z, BlockType t);
     void linkNeighbor(uPtr<Chunk>& neighbor, Direction dir);
-    void buildInterleavedVBOFromData(std::vector<GLfloat>& vertexData, std::vector<GLuint> &idxData);
+    void createVBOBuffer(std::vector<GLfloat>& vertexData, std::vector<GLuint> &idxData);
 
     // Drawable interface
 public:
+    // fills `data` with vertex and index data necessary to create a VBO
+    void createMultithreaded(ChunkVBOData &data);
     void createVBOdata() override;
     GLenum drawMode() override { return GL_TRIANGLES; }
     std::unordered_map<Direction, Chunk *, EnumHash>& neighbors();

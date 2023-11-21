@@ -14,7 +14,8 @@ Player::Player(glm::vec3 pos, const Terrain &terrain)
     : Entity(pos), m_velocity(0,0,0), m_acceleration(0,0,0),
       m_camera(pos + glm::vec3(0, 1.5f, 0)), mcr_terrain(terrain),
     m_hasJumped(false), m_interfaceAxis(-1),
-    mcr_camera(m_camera), m_flightMode(true)
+    mcr_camera(m_camera), m_flightMode(true),
+    m_water(false), m_lava(false)
 {
 
 }
@@ -28,15 +29,20 @@ void Player::tick(float dT, InputBundle &input) {
 }
 
 void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
-    // TODO: Update the Player's velocity and acceleration based on the
-    // state of the inputs.
-
     //glm::mat3 cameraRotation = glm::mat3(glm::orientate3(glm::vec3(glm::radians(inputs.mouseY), 0, glm::radians(inputs.mouseX))));
     //glm::mat3 groundRotation = glm::mat3(glm::eulerAngleY(glm::radians(inputs.mouseX)));
     //m_camera.setRotation(cameraRotation);
 
+    constexpr static float bump = 1.f;
+
     //distinguish between flight and ground mode
-    float acceleration_scalar = 90.0f;
+    float acceleration_scalar = bump * 90.0f;
+
+
+    // Player slow down when swimming.
+    if (m_water == true || m_lava == true) {
+        acceleration_scalar *= float(2.0f/3.0f);
+    }
 
     m_acceleration = glm::vec3(0,0,0);
     //FLIGHT MODE ON: player begins in flight mode
@@ -92,10 +98,10 @@ void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
 
         }
         //Spacebar -> Add a vertical component to the player's velocity to make them jump
-            if (inputs.spacePressed && !m_hasJumped){
-                float jumpStrength = 50.0f; // Adjust this value as needed for the desired jump strength
-                m_velocity.y += jumpStrength;
-                m_hasJumped = true; // Player has jumped, prevent further jumps until reset
+        if (inputs.spacePressed && !m_hasJumped){
+            float jumpStrength = 50.0f; // Adjust this value as needed for the desired jump strength
+            m_velocity.y += jumpStrength;
+            m_hasJumped = true; // Player has jumped, prevent further jumps until reset
         }
     }
 }
@@ -104,18 +110,36 @@ void Player::toggleFlightMode(){
     m_flightMode = !m_flightMode;
 }
 
-bool Player::playerOnGround(const Terrain &terrain, InputBundle &input){
+bool Player::playerOnGround(const Terrain &terrain, InputBundle &input) {
     glm::vec3 playerBoundingBoxMin = this->m_position - glm::vec3(0.5f, 0.f, 0.5f);
     bool isGrounded = false;
     for (int x = 0; x <= 1; x++) {
         for (int z = 0; z >= -1; z--) {
-                glm::vec3 position = glm::vec3(floor(playerBoundingBoxMin.x) + x, floor(playerBoundingBoxMin.y - 0.005f), floor(playerBoundingBoxMin.z) + z);
-                //if not empty block -> touching ground
-                if (terrain.getBlockAt(position) != EMPTY) {
-                    // Ground is detected
-                    isGrounded = true;
-                    break;
+            glm::vec3 position = glm::vec3(floor(playerBoundingBoxMin.x) + x, floor(playerBoundingBoxMin.y - 0.005f), floor(playerBoundingBoxMin.z) + z);
+            //if not empty block -> touching ground
+            if (terrain.getBlockAt(position) != EMPTY &&
+                terrain.getBlockAt(position) != WATER &&
+                terrain.getBlockAt(position) != LAVA &&
+                position[1] >= 25) {
+                // Ground is detected
+                isGrounded = true;
+
+                // Update player swimming indicators.
+                m_water = false;
+                m_lava = false;
+
+                if (terrain.getBlockAt(position) == BEDROCK) {
+                    m_lava = true;
+                } else if (terrain.getBlockAt(position) == SAND) {
+                    m_water = true;
                 }
+
+                break;
+            } else if (terrain.getBlockAt(position) == WATER) {
+                m_water = true;
+            } else if (terrain.getBlockAt(position) == LAVA || position[1] < 25) {
+                m_lava = true;
+            }
         }
         if (isGrounded) break; // If we've found ground, no need to check further
     }
@@ -128,32 +152,36 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input){
 
 
 void Player::computePhysics(float dT, const Terrain &terrain, InputBundle &input) {
-    // TODO: Update the Player's position based on its acceleration
-    // and velocity, and also perform collision detection.
-    //In both movement modes, the player's velocity is reduced to less than 100% of its current value every frame (simulates friction + drag) before acceleration is added to it.
+    // In both movement modes, the player's velocity is reduced to less than 100%
+    // of its current value every frame (simulates friction + drag) before acceleration is added to it.
     m_velocity *= 0.8f;
     m_velocity += m_acceleration * dT;
     glm::vec3 rayDir = m_velocity * dT;
 
     glm::vec3 g = glm::vec3(0.0f, (-9.8f * 20.f), 0.f);
 
-    //Rather than directly changing camera position based on WASD, make the keys alter acceleration or velocity
-    //Position += Velocity * dT
+    // Player falls more slowly when in liquid.
+    if (m_water == true || m_lava == true) {
+        g *= float(2.0f/3.0f);
+    }
 
-    //check if player is in ground or in the air
-    if (!m_flightMode){
+    // Rather than directly changing camera position based on WASD, make the keys alter acceleration or velocity
+    // Position += Velocity * dT
+
+    // check if player is in ground or in the air
+    if (!m_flightMode) {
         //player is falling
-        if(!input.ground){
+        if(!input.ground) {
             m_acceleration = g;
             m_velocity += m_acceleration * dT;
         }
-        else if (input.ground && !input.spacePressed){
+        else if (input.ground && !input.spacePressed) {
             m_velocity.y = 0.0f;
     }
-    //perform collision detection
-    //Cast a ray from each cube vertex in the Player’s movement direction, length = speed
-    rayDir = m_velocity * dT;
-    collision(terrain, &rayDir);
+        // perform collision detection
+        // Cast a ray from each cube vertex in the Player’s movement direction, length = speed
+        rayDir = m_velocity * dT;
+        collision(terrain, &rayDir);
     }
     //move camera and player along ray direction vector
     moveAlongVector(rayDir);
@@ -237,15 +265,27 @@ bool Player::gridMarch(glm::vec3 rayOrigin, glm::vec3 rayDirection, const Terrai
         // If currCell contains something other than EMPTY, return
         // curr_t
         BlockType cellType = terrain.getBlockAt(currCell.x, currCell.y, currCell.z);
-        if(cellType != BlockType::EMPTY) {
+        if(cellType != BlockType::EMPTY &&
+            cellType != BlockType::WATER &&
+            cellType != BlockType::LAVA) {
             *out_blockHit = currCell;
             *out_dist = glm::min(maxLen, curr_t);
+
+            // Update player swimming indicators.
+            m_water = false;
+            m_lava = false;
+
             return true;
+        } else if (cellType == BlockType::WATER) {
+            m_water = true;
+        } else if (cellType == BlockType::LAVA) {
+            m_lava = true;
         }
     }
     *out_dist = glm::min(maxLen, curr_t);
     return false;
 }
+
 
 void Player::removeBlock(Terrain *terrain) {
     glm::vec3 rayOrigin = m_camera.mcr_position;
@@ -255,8 +295,13 @@ void Player::removeBlock(Terrain *terrain) {
     glm::ivec3 out_blockHit = glm::ivec3();
 
     if (gridMarch(rayOrigin, rayDirection, *terrain, &out_dist, &out_blockHit)) {
-        terrain->setBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z, EMPTY);
-        terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+        // If block is BEDROCK it is unbreakable.
+        if (terrain->getBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z) == BEDROCK) {
+            return;
+        } else {
+            terrain->setBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z, EMPTY);
+            //->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+        }
     }
 }
 
@@ -273,17 +318,17 @@ void Player::placeBlock(Terrain *terrain, BlockType blockType) {
             if (terrain->getBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z + glm::sign(rayDirection.z)) == EMPTY) {
                 //place block at that position
                 terrain->setBlockAt(out_blockHit.x, out_blockHit.y, out_blockHit.z + glm::sign(rayDirection.z), blockType);
-                terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+                //terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
             }
         } else if (m_interfaceAxis == 1) {
             if (terrain->getBlockAt(out_blockHit.x, out_blockHit.y + glm::sign(rayDirection.y), out_blockHit.z) == EMPTY) {
                 terrain->setBlockAt(out_blockHit.x, out_blockHit.y + glm::sign(rayDirection.y), out_blockHit.z, blockType);
-                terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+                //terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
             }
         } else if (m_interfaceAxis == 2) {
             if (terrain->getBlockAt(out_blockHit.x + glm::sign(rayDirection.x), out_blockHit.y, out_blockHit.z) == EMPTY) {
                 terrain->setBlockAt(out_blockHit.x + glm::sign(rayDirection.x), out_blockHit.y, out_blockHit.z, blockType);
-                terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
+                //terrain->getChunkAt(out_blockHit.x, out_blockHit.z).get()->createVBOdata();
             }
         }
     }
