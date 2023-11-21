@@ -80,6 +80,10 @@ _Difficulties + Potential improvements_
 
 ## MILESTONE 2
 
+Note: For Joseph's lava fragment shader, the video couldn't accurately capture the red color and it made the effect look orange instead. I've included an image here that more accurately demonstrates the color:
+
+https://drive.google.com/file/d/1eItzAM7qhDRF9_k3sVYuG4ndIPiyMDqm/view?usp=drive_link
+
 **Joseph: Cave Systems**
 
 _3D Noise Functions_
