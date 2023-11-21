@@ -30,6 +30,13 @@ Joseph
 Milestone 2
 -----------
 
+Milan
+------
+11/16 12:00PMPM Received help from Thomas on texturing
+
+11/20 3:30PM Received help from Jackie on separating VBO data and drawing transparent and opaque blocks
+
+
 Joseph
 ------
 
@@ -49,3 +56,4 @@ https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 11/16 5:31PM - Got feedback from Nick on shaders and caves.
 
 11/20 5:02PM - Got help with some clarifying questions from Dineth for my submission and feedback on my caves and shader implementations.
+
