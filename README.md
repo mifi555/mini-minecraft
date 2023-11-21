@@ -159,7 +159,18 @@ In `Terrain::checkThreadResults()`:
 * spawn `VBOWorker`'s for new chunks with block data
 * for complete `VBOWorker` threads, we create new vertex buffers to be sent to the GPU, which is done in the main thread
 
+**Milan: Texturing and texture animation in OpenGL**
+Created a way to load images as textures into OpenGL by using the Texture class base code from HW04/05
 
+Created an addition to lambert.frag.glsl that makes use of a sampler2D to apply texture colors to a surface.
+
+Split VBO Chunk Data to Transparent and Opaque VBO data in Chunk’s createMultiThreaded()
+
+Altered lambert.frag.glsl so that it includes a time variable to animate the UVs on a LAVA block and WATER block.
+
+Using the BlockType of a given block, set the UV coordinates of a square face in the Chunk VBO so that they correspond to the appropriate texture square by using an unordered map of block type and UV coordinates 
+
+Enabled alpha blending in MyGL::initializeGL() so that transparency can be applied to WATER blocks.
 
 
 
