@@ -80,6 +80,18 @@ _Difficulties + Potential improvements_
 
 ## MILESTONE 2
 
+Video Link: https://drive.google.com/file/d/1kn9rcbHVXe5LEEVcnnFHx_L-bWODC4vj/view?usp=drive_link 
+
+
+Timestamps
+
+0:00 - 1:18: Cave Systems and Post-Processing
+
+1:19 - 2:17: Multithreaded Terrain Generation
+
+2:18 - 2:31: Texturing and Texture Animation
+
+
 Note: For Joseph's lava fragment shader, the video couldn't accurately capture the red color and it made the effect look orange instead. I've included an image here that more accurately demonstrates the color:
 
 https://drive.google.com/file/d/1eItzAM7qhDRF9_k3sVYuG4ndIPiyMDqm/view?usp=drive_link
