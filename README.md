@@ -124,3 +124,30 @@ _Player Swimming Movement_
 _Improved Terrain_
 
 - Improved upon the previous terrain by reducing the amount of water, making the islands more visually appealing, adding a layer of sand below the water and layering the water on top of it, and adding lava streams to the mountains.
+
+**Michael: Multi-Threaded Terrain Generation**
+
+Multi-threading is used to procedurally generate the terrain around the player. The radius can be changed in `Terrain.cpp` using `TERRAIN_DRAW_RADIUS` and `TERRAIN_CREATE_RADIUS`. By default it's 1 (3x3 DRAW radius) and 2 (5x5 CREATE radius) respectively.
+
+At every `MyGL::tick()`, `Terrain::multithreadedWork()` runs to check if the player has entered into a new terrain zone. This function runs `Terrain::tryExpansion()` and `Terrain::checkThreadResults()`
+
+In `Terrain::tryExpansion()`:
+
+* determine the player's current and previous position
+* compare those positions, if the player is in the same zone they were in previous position, return early
+* determine the `TerrainConstants::Direction` the player went, to optimize which terrain zones we must consider for deletion / expansion
+* delete zones that are outside the player's radius (in the opposite direction of the player)
+* for new zones that will enter the player's radius (in the direction of the player), we either:
+    1. spawn `BlockTypeWorker`'s to generate Terrain zones the player has not seen yet
+    2. spawn `VBOWorker`'s to generate the VBO data of terrain zones we already have block data for
+
+
+In `Terrain::checkThreadResults()`:
+
+* spawn `VBOWorker`'s for new chunks with block data
+* for complete `VBOWorker` threads, we create new vertex buffers to be sent to the GPU, which is done in the main thread
+
+
+
+
+
