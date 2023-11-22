@@ -10,7 +10,7 @@ ShaderProgram::ShaderProgram(OpenGLContext *context)
     : vertShader(), fragShader(), prog(),
       attrPos(-1), attrNor(-1), attrCol(-1),
       unifModel(-1), unifModelInvTr(-1), unifViewProj(-1), unifColor(-1),
-      unifSampler2D(-1), unifTime(-1),
+      unifSampler2D(-1), unifTime(-1), attrUV(-1),
       context(context)
 {}
 
@@ -77,10 +77,15 @@ void ShaderProgram::setupMemberVars()
     if(attrCol == -1) attrCol = context->glGetAttribLocation(prog, "vs_ColInstanced");
     attrPosOffset = context->glGetAttribLocation(prog, "vs_OffsetInstanced");
 
+    attrUV = context->glGetAttribLocation(prog, "vs_UV");
+
     unifModel      = context->glGetUniformLocation(prog, "u_Model");
     unifModelInvTr = context->glGetUniformLocation(prog, "u_ModelInvTr");
     unifViewProj   = context->glGetUniformLocation(prog, "u_ViewProj");
     unifColor      = context->glGetUniformLocation(prog, "u_Color");
+
+    unifSampler2D = context->glGetUniformLocation(prog, "u_Texture");
+    unifTime = context->glGetUniformLocation(prog, "u_Time");
 }
 
 void ShaderProgram::useMe()
@@ -256,6 +261,10 @@ void ShaderProgram::drawInterleaved(Drawable &d)
 {
     useMe();
 
+    if (unifSampler2D != -1) {
+        context->glUniform1i(unifSampler2D, 0);
+    }
+
     if (d.bindInterleaved()) {
 
         if (attrPos != -1) {
@@ -268,9 +277,16 @@ void ShaderProgram::drawInterleaved(Drawable &d)
             context->glVertexAttribPointer(attrNor, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 4));
         }
 
+#if 0
         if (attrCol != -1) {
             context->glEnableVertexAttribArray(attrCol);
             context->glVertexAttribPointer(attrCol, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 8));
+        }
+#endif
+
+        if (attrUV != -1) {
+            context->glEnableVertexAttribArray(attrUV);
+            context->glVertexAttribPointer(attrUV, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 8));
         }
     }
 
@@ -279,7 +295,8 @@ void ShaderProgram::drawInterleaved(Drawable &d)
 
         if (attrPos != -1) context->glDisableVertexAttribArray(attrPos);
         if (attrNor != -1) context->glDisableVertexAttribArray(attrNor);
-        if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
+        //if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
+        if (attrUV != -1) context->glDisableVertexAttribArray(attrUV);
 
         context->printGLErrorLog();
     }
@@ -359,6 +376,61 @@ void ShaderProgram::printLinkInfoLog(int prog)
         qDebug() << "LinkInfoLog:" << "\n" << infoLog << "\n";
         delete [] infoLog;
     }
+}
+
+void ShaderProgram::setTextureSampler(int texSlot)
+{
+    useMe();
+
+    if(unifSampler2D != -1)
+    {
+        context->glUniform1i(unifSampler2D, texSlot);
+    }
+}
+
+void ShaderProgram::drawInterleavedTransparent(Drawable &d)
+{
+
+    useMe();
+
+    if(unifSampler2D != -1) {
+        context->glUniform1i(unifSampler2D, 0);
+    }
+
+    if (d.bindTransparent()) {
+
+        if (attrPos != -1) {
+            context->glEnableVertexAttribArray(attrPos);
+            context->glVertexAttribPointer(attrPos, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)0);
+        }
+
+        if (attrNor != -1) {
+            context->glEnableVertexAttribArray(attrNor);
+            context->glVertexAttribPointer(attrNor, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 4));
+        }
+
+        //        if (attrCol != -1) {
+        //            context->glEnableVertexAttribArray(attrCol);
+        //            context->glVertexAttribPointer(attrCol, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 8));
+        //        }
+
+        if (attrUV != -1) {
+            context->glEnableVertexAttribArray(attrUV);
+            context->glVertexAttribPointer(attrUV, 4, GL_FLOAT, false, sizeof(GLfloat) * 12, (void*)(sizeof(GLfloat) * 8));
+        }
+    }
+
+    if (d.bindIdxTransparent()) {
+        context->glDrawElements(d.drawMode(), d.elemCountTransparent(), GL_UNSIGNED_INT, 0);
+
+        if (attrPos != -1) context->glDisableVertexAttribArray(attrPos);
+        if (attrNor != -1) context->glDisableVertexAttribArray(attrNor);
+        // if (attrCol != -1) context->glDisableVertexAttribArray(attrCol);
+        if (attrUV != -1) context->glDisableVertexAttribArray(attrUV);
+
+        context->printGLErrorLog();
+    }
+
 }
 
 void ShaderProgram::setTime(int t)

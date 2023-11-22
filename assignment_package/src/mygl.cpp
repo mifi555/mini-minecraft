@@ -21,7 +21,8 @@ MyGL::MyGL(QWidget *parent)
       vao(-1),
       m_terrain(this), m_player(glm::vec3(48.f, 129.f, 48.f), m_terrain),
       m_currMSecSinceEpoch(QDateTime::currentMSecsSinceEpoch()), m_blockType(GRASS),
-      m_timer()
+      m_timer(),
+      m_texture(this)
 {
     // Connect the timer to a function so that when the timer ticks the function is executed
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -49,6 +50,20 @@ void MyGL::initializeGL()
     // Set a few settings/modes in OpenGL rendering
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
+
+
+    //~~~~
+    //**Enabling alpha blending so that transparency can be applied to WATER blocks.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_texture.create(":/textures/minecraft_textures_all.png");
+    m_texture.load(0);
+
+    glEnable(GL_LINE_SMOOTH);
+
+    //~~~
+
     // Set the color with which the screen is filled at the start of each render call.
     glClearColor(0.37f, 0.74f, 1.0f, 1);
 
@@ -75,12 +90,15 @@ void MyGL::initializeGL()
     m_progWater.setupMemberVars();
     m_progLava.setupMemberVars();
 
-
     // Set a color with which to draw geometry.
     // This will ultimately not be used when you change
     // your program to render Chunks with vertex colors
     // and UV coordinates
     m_progLambert.setGeometryColor(glm::vec4(0,1,0,1));
+
+    // Alpha blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // We have to have a VAO bound in OpenGL 3.2 Core. But if we're not
     // using multiple VAOs, we can just bind one once.
@@ -231,6 +249,10 @@ void MyGL::paintGL() {
 // terrain that surround the player (refer to Terrain::m_generatedTerrain
 // for more info)
 void MyGL::renderTerrain() {
+    m_texture.bind(0);
+    m_progLambert.setTextureSampler(0);
+    m_progLambert.setTime(m_time++);
+
     m_progLambert.setModelMatrix(glm::mat4(1.f));
     m_terrain.draw(m_player.mcr_position, &m_progLambert);
 }

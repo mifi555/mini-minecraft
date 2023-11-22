@@ -26,6 +26,7 @@ public:
     int unifColor; // A handle for the "uniform" vec4 representing color of geometry in the vertex shader
     int unifSampler2D; // A handle to the "uniform" sampler2D that will be used to read the texture containing the scene render
     int unifTime; // A handle for the "uniform" float representing time in the shader
+    int attrUV;
 
 public:
     ShaderProgram(OpenGLContext* context);
@@ -55,6 +56,9 @@ public:
     void printShaderInfoLog(int shader);
     // Utility function that prints any shader linking errors to the console
     void printLinkInfoLog(int prog);
+
+    void setTextureSampler(int texSlot);
+    void drawInterleavedTransparent(Drawable &d);
 
     void setTime(int t);
 

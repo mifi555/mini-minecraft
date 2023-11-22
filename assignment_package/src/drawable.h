@@ -7,6 +7,19 @@
 class Drawable
 {
 protected:
+    int m_countOpaque;
+    int m_countTransparent;
+
+    GLuint m_bufOpaque;
+    GLuint m_bufIdxOpaque;
+    GLuint m_bufTransparent;
+    GLuint m_bufIdxTransparent;
+
+    bool m_opaqueGenerated;
+    bool m_idxOpaqueGenerated;
+    bool m_transparentGenerated;
+    bool m_idxTransparentGenerated;
+
     int m_count;     // The number of indices stored in bufIdx.
 
     GLuint m_bufIdx; // A Vertex Buffer Object that we will use to store triangle indices (GLuints)
@@ -43,6 +56,10 @@ public:
     virtual GLenum drawMode();
     int elemCount();
 
+    int elemCountOpaque();  // TODO: ??
+
+    int elemCountTransparent();
+
     // Call these functions when you want to call glGenBuffers on the buffers stored in the Drawable
     // These will properly set the values of idxBound etc. which need to be checked in ShaderProgram::draw()
     void generateIdx();
@@ -52,12 +69,24 @@ public:
     void generateInterleaved();
     void generateUV();
 
+    // new
+    void generateOpaque();
+    void generateIdxOpaque();
+    void generateTransparent();
+    void generateIdxTransparent();
+
     bool bindIdx();
     bool bindPos();
     bool bindNor();
     bool bindCol();
     bool bindInterleaved();
     bool bindUV();
+
+    //new
+    bool bindOpaque();
+    bool bindIdxOpaque();
+    bool bindTransparent();
+    bool bindIdxTransparent();
 };
 
 // A subclass of Drawable that enables the base code to render duplicates of
