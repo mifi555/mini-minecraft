@@ -160,6 +160,7 @@ In `Terrain::checkThreadResults()`:
 * for complete `VBOWorker` threads, we create new vertex buffers to be sent to the GPU, which is done in the main thread
 
 **Milan: Texturing and texture animation in OpenGL**
+
 Created a way to load images as textures into OpenGL by using the Texture class base code from HW04/05
 
 Associated the texture with a sampler2D in a shader and used a .qrc file to let Qt know that it should include the texture files in its working directory
