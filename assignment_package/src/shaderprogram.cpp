@@ -24,10 +24,10 @@ void ShaderProgram::create(const char *vertfile, const char *fragfile)
     QString qVertSource = qTextFileRead(vertfile);
     QString qFragSource = qTextFileRead(fragfile);
 
-    char* vertSource = new char[qVertSource.size()+1];
-    strcpy(vertSource, qVertSource.toStdString().c_str());
-    char* fragSource = new char[qFragSource.size()+1];
-    strcpy(fragSource, qFragSource.toStdString().c_str());
+    char* vertSource = new char[qVertSource.toStdString().size()+1];
+    std::strncpy(vertSource, qVertSource.toStdString().c_str(), qVertSource.toStdString().size() + 1);
+    char* fragSource = new char[qFragSource.toStdString().size()+1];
+    std::strncpy(fragSource, qFragSource.toStdString().c_str(), qFragSource.toStdString().size() + 1);
 
 
     // Send the shader text to OpenGL and store it in the shaders specified by the handles vertShader and fragShader
@@ -62,6 +62,9 @@ void ShaderProgram::create(const char *vertfile, const char *fragfile)
     // Get the handles to the variables stored in our shaders
     // See shaderprogram.h for more information about these variables
     setupMemberVars();
+
+    delete[] vertSource;
+    delete[] fragSource;
 }
 
 void ShaderProgram::setupMemberVars()
