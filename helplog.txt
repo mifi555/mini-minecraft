@@ -32,9 +32,11 @@ Milestone 2
 
 Milan
 ------
-11/16 12:00PMPM Received help from Thomas on texturing
+11/16 12:00PM Received help from Thomas on texturing
 
 11/20 3:30PM Received help from Jackie on separating VBO data and drawing transparent and opaque blocks
+
+11/21 12:30PM Received help from Thomas with ShaderProgram class to support texture features
 
 
 Joseph
