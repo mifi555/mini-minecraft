@@ -90,7 +90,7 @@ Timestamps
 1:19 - 2:17: Multithreaded Terrain Generation
 
 2:18 - 2:31: Texturing and Texture Animation
-
+Additional texturing video: https://drive.google.com/file/d/1obsw2FV2ZpkvHDJdSfPAuyk9NVdkvDyv/view?usp=sharing
 
 Note: For Joseph's lava fragment shader, the video couldn't accurately capture the red color and it made the effect look orange instead. I've included an image here that more accurately demonstrates the color:
 
@@ -162,15 +162,18 @@ In `Terrain::checkThreadResults()`:
 **Milan: Texturing and texture animation in OpenGL**
 Created a way to load images as textures into OpenGL by using the Texture class base code from HW04/05
 
-Created an addition to lambert.frag.glsl that makes use of a sampler2D to apply texture colors to a surface.
+Associated the texture with a sampler2D in a shader and used a .qrc file to let Qt know that it should include the texture files in its working directory
 
-Split VBO Chunk Data to Transparent and Opaque VBO data in Chunk’s createMultiThreaded()
+Created an addition to lambert.frag.glsl that makes use of a sampler2D to apply texture colors to a surface
 
-Altered lambert.frag.glsl so that it includes a time variable to animate the UVs on a LAVA block and WATER block.
+Split VBO Chunk Data to Transparent and Opaque VBO data in Chunk’s createMultiThreaded(), modified createVBOBuffer(), and drew interleaved transparent and opaque blocks in drawTerrainZone() of the Terrain class using the shader program.
+
+Altered lambert.frag.glsl so that it includes a time variable to animate the UVs on a LAVA block and WATER block. The animateable block flag is the z value of the UV vec.
 
 Using the BlockType of a given block, set the UV coordinates of a square face in the Chunk VBO so that they correspond to the appropriate texture square by using an unordered map of block type and UV coordinates 
 
 Enabled alpha blending in MyGL::initializeGL() so that transparency can be applied to WATER blocks.
+
 
 
 
