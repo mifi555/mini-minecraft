@@ -11,10 +11,11 @@
 #include "scene/framebuffer.h"
 #include "scene/quad.h"
 
+#include "texture.h"
+
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLShaderProgram>
 #include <smartpointerhelp.h>
-
 
 class MyGL : public OpenGLContext
 {
@@ -48,6 +49,8 @@ private:
     BlockType m_blockType;
 
     QTimer m_timer; // Timer linked to tick(). Fires approximately 60 times per second.
+
+    Texture m_texture;
 
 public:
     void prepFrameBuffer();

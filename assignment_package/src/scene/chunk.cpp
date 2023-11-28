@@ -59,6 +59,45 @@ void Chunk::linkNeighbor(uPtr<Chunk> &neighbor, Direction dir) {
     }
 }
 
+void Chunk::createVBOBuffer(std::vector<GLfloat>& vertexDataOpaque, std::vector<GLfloat>& vertexDataTransparent,
+                            std::vector<GLuint> &idxDataOpaque, std::vector<GLuint> &idxDataTransparent){
+
+
+    Drawable::m_count = idxDataOpaque.size();
+
+    Drawable::generateInterleaved();
+    if (Drawable::bindInterleaved()) {
+        mp_context->glBufferData(
+            GL_ARRAY_BUFFER, sizeof(GLfloat) * vertexDataOpaque.size(), vertexDataOpaque.data(), GL_STATIC_DRAW
+            );
+    }
+
+    Drawable::generateIdx();
+    if (Drawable::bindIdx()) {
+        mp_context->glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * idxDataOpaque.size(), idxDataOpaque.data(), GL_STATIC_DRAW
+            );
+    }
+
+    Drawable::m_countTransparent = idxDataTransparent.size();
+
+    Drawable::generateTransparent();
+    if (Drawable::bindTransparent()) {
+        mp_context->glBufferData(
+            GL_ARRAY_BUFFER, sizeof(GLfloat) * vertexDataTransparent.size(), vertexDataTransparent.data(), GL_STATIC_DRAW
+            );
+    }
+
+    Drawable::generateIdxTransparent();
+    if (Drawable::bindIdxTransparent()) {
+        mp_context->glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER, sizeof(GLfloat) * idxDataTransparent.size(), idxDataTransparent.data(), GL_STATIC_DRAW
+            );
+    }
+
+}
+
+#if 0
 void Chunk::createVBOBuffer(std::vector<GLfloat> &vertexData, std::vector<GLuint> &idxData) {
 
     Drawable::m_count = idxData.size();
@@ -77,6 +116,7 @@ void Chunk::createVBOBuffer(std::vector<GLfloat> &vertexData, std::vector<GLuint
         );
     }
 }
+#endif
 
 void insertVec4(std::vector<GLfloat> &v, const glm::vec4 &data) {
     v.push_back(data.x);
@@ -101,7 +141,19 @@ void createFaceIndices(std::vector<GLuint>& idxData, const std::array<GLuint, Ch
 void Chunk::createMultithreaded(ChunkVBOData& data) {
     // TODO: For transparent types, we'll need to populate a "transparent" buffer that will be drawn seperately.
 
-    int idxCounter = 0;
+    // **texturing**
+    // map stores transparency information
+    std::unordered_map<BlockType, bool> blockTransparency = {
+        {EMPTY, false},
+        {GRASS, false},
+        {DIRT, false},
+        {STONE, false},
+        {WATER, true},
+        {SNOW, false}
+    };
+
+    int idxCounterOpaque = 0;
+    int idxCounterTransparent = 0;
 
     // change this so that it vertices are drawn relative to worldspace (using minX / minZ)
     // zyx because it's more cache efficient
@@ -109,7 +161,17 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
         for (int y = 0; y < 256; y++) {
             for (int x = 0; x < 16; x++) {
                 BlockType current = this->getBlockAt(x, y, z);
+
+                bool isBlockTransparent = blockTransparency[current];
+
+                std::vector<GLfloat> &vboData = isBlockTransparent ? data.vboDataTransparent : data.vboDataOpaque;
+                std::vector<GLuint> &idxData = isBlockTransparent ? data.idxDataTransparent : data.idxDataOpaque;
+                int &idxCounter = isBlockTransparent ? idxCounterTransparent : idxCounterOpaque;
+
                 if (current != EMPTY) {
+
+                    // Choose the right buffer and counter based on transparency
+
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
                         glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
 
@@ -119,29 +181,92 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                             offset.y < 0 || offset.y > 255 ||
                             offset.z < 0 || offset.z > 15) {
                             neighbour = EMPTY;
+
                         } else {
                             neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         }
 
-
                         if (neighbour == EMPTY) {
                             std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
                             for (size_t i = 0; i < n.pos.size(); i++) {
-                                insertVec4(data.vboDataOpaque, glm::vec4(minX + x, y, minZ + z, 1.f) + n.pos[i]);  // vertex position
-                                insertVec4(data.vboDataOpaque, n.nor);                               // vertex normal
-                                insertVec4(                                                  // vertex color
-                                    data.vboDataOpaque,
-                                    ChunkConstants::blocktype_to_color.at(current)
-                                    );
+
+                                glm::vec4 pos = glm::vec4(minX + x, y, minZ + z, 1.f) + n.pos[i];
+
+                                //convert direction
+                                Direction dir = convertToDirection(n.direction);
+
+                                //offset: 1/16.f:
+                                //glm::vec2 uv = blockFaceUVs.at(current).at(dir);
+
+                                // Retrieve the bottom-left corner UV for this face of the block
+                                glm::vec2 uvBottomLeft = blockFaceUVs.at(current).at(dir);
+                                // Calculate UVs for all four corners
+                                glm::vec2 uvTopLeft = uvBottomLeft + glm::vec2(0, 1/16.f);
+                                glm::vec2 uvTopRight = uvBottomLeft + glm::vec2(1/16.f, 1/16.f);
+                                glm::vec2 uvBottomRight = uvBottomLeft + glm::vec2(1/16.f, 0);
+
+                                glm::vec2 uv;
+
+                                switch (i) {
+                                case 0:
+                                    uv = uvTopLeft;
+                                    break;
+                                case 1:
+                                    uv = uvBottomLeft;
+                                    break;
+                                case 2:
+                                    uv = uvBottomRight;
+
+                                    break;
+                                case 3:
+                                    uv = uvTopRight;
+                                    break;
+                                }
+
+                                bool animatable = isBlockAnimateable(current);
+
+                                insertVec4(vboData, pos);  // vertex position
+                                insertVec4(vboData, n.nor); // vertex normal
+
+                                //store animateable flag in z coordinate
+                                insertVec4(vboData, glm::vec4(uv[0], uv[1], animatable, 0));
+
+                                //                                insertVec4(                                                  // vertex color
+                                //                                    vboData,
+                                //                                    ChunkConstants::blocktype_to_color.at(current)
+                                //                                    );
+
                                 faceIndices.at(i) = idxCounter++;
                             }
                             // add index data for this face
-                            createFaceIndices(data.idxDataOpaque, faceIndices);
+                            createFaceIndices(idxData, faceIndices);
                         }
                     }
                 }
             }
         }
+    }
+    return;
+}
+
+
+bool Chunk::isBlockAnimateable(BlockType type) {
+    return type == WATER || type == LAVA;
+}
+
+Direction Chunk::convertToDirection(const glm::ivec3& dirVec) {
+    if (dirVec == glm::ivec3(1, 0, 0)) {
+        return XPOS;
+    } else if (dirVec == glm::ivec3(-1, 0, 0)) {
+        return XNEG;
+    } else if (dirVec == glm::ivec3(0, 1, 0)) {
+        return YPOS;
+    } else if (dirVec == glm::ivec3(0, -1, 0)) {
+        return YNEG;
+    } else if (dirVec == glm::ivec3(0, 0, 1)) {
+        return ZPOS;
+    } else if (dirVec == glm::ivec3(0, 0, -1)) {
+        return ZNEG;
     }
 }
 
@@ -153,7 +278,9 @@ void Chunk::createVBOdata() {
     // check the neighbours of each non-empty block to see if they ARE empty
     // if a nebour is empty, add VBO data for a face in that direction
         // vertex pos, vertex col, v normal, idx
+    std::exit(-1);
 
+#if 0
     std::vector<GLfloat> vertexData;
     std::vector<GLuint> idxData;
     int idxCounter = 0;
@@ -198,6 +325,5 @@ void Chunk::createVBOdata() {
             }
         }
     }
-
-    createVBOBuffer(vertexData, idxData);
+#endif
 }

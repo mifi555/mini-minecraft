@@ -25,6 +25,8 @@ enum Direction : unsigned char
     XPOS, XNEG, YPOS, YNEG, ZPOS, ZNEG
 };
 
+
+
 // Lets us use any enum class as the key of a
 // std::unordered_map
 struct EnumHash {
@@ -32,6 +34,65 @@ struct EnumHash {
     size_t operator()(T t) const {
         return static_cast<size_t>(t);
     }
+};
+
+
+const static std::unordered_map<BlockType, std::unordered_map<Direction, glm::vec2, EnumHash>, EnumHash> blockFaceUVs {
+  {GRASS, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(3.f/16.f, 15.f/16.f)}, //right side of the grass
+                                                             {XNEG, glm::vec2(3.f/16.f, 15.f/16.f)}, //left side of the grass
+                                                             {YPOS, glm::vec2(8.f/16.f, 13.f/16.f)}, //top of grass
+                                                             {YNEG, glm::vec2(2.f/16.f, 15.f/16.f)}, //bottom of grass
+                                                             {ZPOS, glm::vec2(3.f/16.f, 15.f/16.f)}, //front side of grass
+                                                             {ZNEG, glm::vec2(3.f/16.f, 15.f/16.f)}}}, //back side of grass
+
+  {DIRT, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(2.f/16.f, 15.f/16.f)},
+                                                            {XNEG, glm::vec2(2.f/16.f, 15.f/16.f)},
+                                                            {YPOS, glm::vec2(2.f/16.f, 15.f/16.f)},
+                                                            {YNEG, glm::vec2(2.f/16.f, 15.f/16.f)},
+                                                            {ZPOS, glm::vec2(2.f/16.f, 15.f/16.f)},
+                                                            {ZNEG, glm::vec2(2.f/16.f, 15.f/16.f)}}},
+
+  {STONE, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(1.f/16.f, 15.f/16.f)},
+                                                             {XNEG, glm::vec2(1.f/16.f, 15.f/16.f)},
+                                                             {YPOS, glm::vec2(1.f/16.f, 15.f/16.f)},
+                                                             {YNEG, glm::vec2(1.f/16.f, 15.f/16.f)},
+                                                             {ZPOS, glm::vec2(1.f/16.f, 15.f/16.f)},
+                                                             {ZNEG, glm::vec2(1.f/16.f, 15.f/16.f)}}},
+
+  {LAVA, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(15.f/16.f, 1.f/16.f)},
+                                                            {XNEG, glm::vec2(15.f/16.f, 1.f/16.f)},
+                                                            {YPOS, glm::vec2(15.f/16.f, 1.f/16.f)},
+                                                            {YNEG, glm::vec2(15.f/16.f, 1.f/16.f)},
+                                                            {ZPOS, glm::vec2(15.f/16.f, 1.f/16.f)},
+                                                            {ZNEG, glm::vec2(15.f/16.f, 1.f/16.f)}}},
+
+  {WATER, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(15.f/16.f, 3.f/16.f)},
+                                                             {XNEG, glm::vec2(15.f/16.f, 3.f/16.f)},
+                                                             {YPOS, glm::vec2(15.f/16.f, 3.f/16.f)},
+                                                             {YNEG, glm::vec2(15.f/16.f, 3.f/16.f)},
+                                                             {ZPOS, glm::vec2(15.f/16.f, 3.f/16.f)},
+                                                             {ZNEG, glm::vec2(15.f/16.f, 3.f/16.f)}}},
+
+  {SNOW, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(2.f/16.f, 11.f/16.f)},
+                                                            {XNEG, glm::vec2(2.f/16.f, 11.f/16.f)},
+                                                            {YPOS, glm::vec2(2.f/16.f, 11.f/16.f)},
+                                                            {YNEG, glm::vec2(2.f/16.f, 11.f/16.f)},
+                                                            {ZPOS, glm::vec2(2.f/16.f, 11.f/16.f)},
+                                                            {ZNEG, glm::vec2(2.f/16.f, 11.f/16.f)}}},
+
+  {SAND, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(2.f/16.f, 14.f/16.f)},
+                                                            {XNEG, glm::vec2(2.f/16.f, 14.f/16.f)},
+                                                            {YPOS, glm::vec2(2.f/16.f, 14.f/16.f)},
+                                                            {YNEG, glm::vec2(2.f/16.f, 14.f/16.f)},
+                                                            {ZPOS, glm::vec2(2.f/16.f, 14.f/16.f)},
+                                                            {ZNEG, glm::vec2(2.f/16.f, 14.f/16.f)}}},
+
+  {BEDROCK, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(1.f/16.f, 1.f/16.f)},
+                                                               {XNEG, glm::vec2(1.f/16.f, 1.f/16.f)},
+                                                               {YPOS, glm::vec2(1.f/16.f, 1.f/16.f)},
+                                                               {YNEG, glm::vec2(1.f/16.f, 1.f/16.f)},
+                                                               {ZPOS, glm::vec2(1.f/16.f, 1.f/16.f)},
+                                                               {ZNEG, glm::vec2(1.f/16.f, 1.f/16.f)}}},
 };
 
 class Chunk;
@@ -71,7 +132,12 @@ public:
     BlockType getBlockAt(int x, int y, int z) const;
     void setBlockAt(unsigned int x, unsigned int y, unsigned int z, BlockType t);
     void linkNeighbor(uPtr<Chunk>& neighbor, Direction dir);
-    void createVBOBuffer(std::vector<GLfloat>& vertexData, std::vector<GLuint> &idxData);
+    void createVBOBuffer(std::vector<GLfloat>& vertexDataOpaque, std::vector<GLfloat>& vertexDataTransparent,
+                         std::vector<GLuint> &idxDataOpaque, std::vector<GLuint> &idxDataTransparent);
+    bool isBlockAnimateable(BlockType type);
+    Direction convertToDirection(const glm::ivec3& dirVec);
+
+    glm::vec2 calculateUV(BlockType current, glm::ivec3 direction);
 
     // Drawable interface
 public:

@@ -1,4 +1,4 @@
-#version 150
+#version 330
 // ^ Change this to version 130 if you have compatibility issues
 
 // This is a fragment shader. If you've opened this file first, please
@@ -11,6 +11,13 @@
 // can compute what color to apply to its pixel based on things like vertex
 // position, light position, and vertex color.
 
+
+//**texturing uniform
+
+uniform sampler2D u_Texture; // The texture to be read from by this shader
+uniform int u_Time; //time variable to animate WATER and LAVA blocks
+
+
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
 
 // These are the interpolated values out of the rasterizer, so you can't know
@@ -18,7 +25,14 @@ uniform vec4 u_Color; // The color with which to render this instance of geometr
 in vec4 fs_Pos;
 in vec4 fs_Nor;
 in vec4 fs_LightVec;
-in vec4 fs_Col;
+//in vec4 fs_Col;
+
+//**texturing in
+in vec4 fs_UV;
+
+//add a flag attribute to see if the block is animated
+
+//in vec4 fs_CameraPos;
 
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
@@ -70,9 +84,33 @@ float fbm(vec3 p) {
 
 void main()
 {
+    //bool animateable = fs_UV.z;
+
+    vec2 uv = fs_UV.xy;
+
+    //WATER OR LAVA
+    vec2 offset = vec2(0, 0);
+
+    // animated water / lava
+    if (fs_UV.z != 0) {
+        offset.x = u_Time % 100 * 0.005 / 10;
+        uv += offset;
+    }
+
+    vec4 textureColor = texture(u_Texture, uv); // Sample the texture
+
     // Material base color (before shading)
-        vec4 diffuseColor = fs_Col;
-        diffuseColor = diffuseColor * (0.5 * fbm(fs_Pos.xyz) + 0.5);
+
+    //**UNCOMMENT TO LOAD TEXTURES
+        vec4 diffuseColor = textureColor;     // diffuse color with the texture color
+
+        //vec4 diffuseColor = fs_Col;
+
+        if (diffuseColor.a < 0.01f){
+            discard;
+        }
+
+        diffuseColor = diffuseColor;
 
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
@@ -87,4 +125,7 @@ void main()
 
         // Compute final shaded color
         out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+        //out_Col = vec4(vec3(fs_UV.xy, 0) * lightIntensity, diffuseColor.a);
+
+
 }

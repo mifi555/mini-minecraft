@@ -271,7 +271,8 @@ void Terrain::checkThreadResults()
     m_chunksThatHaveVBOsLock.lock();
     // loop through VBO data and send vbo data to GPU
     for (ChunkVBOData& vbo : m_chunksThatHaveVBOs) {
-        vbo.chunk->createVBOBuffer(vbo.vboDataOpaque, vbo.idxDataOpaque);
+        // TODO:
+        vbo.chunk->createVBOBuffer(vbo.vboDataOpaque, vbo.vboDataTransparent, vbo.idxDataOpaque, vbo.idxDataTransparent);
     }
     // clear vbo list
     m_chunksThatHaveVBOs.clear();
@@ -431,7 +432,21 @@ void Terrain::drawTerrainZone(int minX, int minZ, ShaderProgram *shaderProgram) 
         for(int z = minZ; z < maxZ; z += 16) {
             if (hasChunkAt(x, z)) {
                 const uPtr<Chunk> &chunk = getChunkAt(x, z);
-                shaderProgram->drawInterleaved(*chunk);
+                if (chunk->elemCount() != -1) {
+                    shaderProgram->drawInterleaved(*chunk);
+                }
+            }
+        }
+    }
+
+    // TODO:
+    for(int x = minX; x < maxX; x += 16) {
+        for(int z = minZ; z < maxZ; z += 16) {
+            if (hasChunkAt(x, z)) {
+                const uPtr<Chunk> &chunk = getChunkAt(x, z);
+                if (chunk->elemCountTransparent() != -1) {
+                    shaderProgram->drawInterleavedTransparent(*chunk);
+                }
             }
         }
     }
