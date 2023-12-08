@@ -144,17 +144,6 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
     // modulo operator that returns a remainder that is the same sign as it's operand
     auto mod = [](int a, int b) { return (a % b + b) % b; };
 
-    // **texturing**
-    // map stores transparency information
-    std::unordered_map<BlockType, bool> blockTransparency = {
-        {EMPTY, false},
-        {GRASS, false},
-        {DIRT, false},
-        {STONE, false},
-        {WATER, true},
-        {SNOW, false}
-    };
-
     int idxCounterOpaque = 0;
     int idxCounterTransparent = 0;
 
@@ -165,14 +154,11 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
             for (int x = 0; x < 16; x++) {
                 BlockType current = this->getBlockAt(x, y, z);
 
-                bool isBlockTransparent = blockTransparency[current];
-
-                std::vector<GLfloat> &vboData = isBlockTransparent ? data.vboDataTransparent : data.vboDataOpaque;
-                std::vector<GLuint> &idxData = isBlockTransparent ? data.idxDataTransparent : data.idxDataOpaque;
-                int &idxCounter = isBlockTransparent ? idxCounterTransparent : idxCounterOpaque;
+                std::vector<GLfloat> &vboData = current == WATER ? data.vboDataTransparent : data.vboDataOpaque;
+                std::vector<GLuint> &idxData = current == WATER ? data.idxDataTransparent : data.idxDataOpaque;
+                int &idxCounter = current == WATER ? idxCounterTransparent : idxCounterOpaque;
 
                 if (current != EMPTY) {
-
                     // Choose the right buffer and counter based on transparency
 
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
@@ -200,7 +186,7 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                             neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         }
 
-                        if (neighbour == EMPTY || (current != WATER && neighbour == WATER) || (current != LAVA && neighbour == LAVA)) {
+                        if (neighbour == EMPTY || (!hasAlpha[current] && hasAlpha[neighbour])) {
                             std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
                             for (size_t i = 0; i < n.pos.size(); i++) {
 

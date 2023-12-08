@@ -8,12 +8,15 @@
 #include <cstddef>
 
 
-//using namespace std;
+// Lets us use any enum class as the key of a
+// std::unordered_map
+struct EnumHash {
+    template <typename T>
+    size_t operator()(T t) const {
+        return static_cast<size_t>(t);
+    }
+};
 
-// C++ 11 allows us to define the size of an enum. This lets us use only one byte
-// of memory to store our different block types. By default, the size of a C++ enum
-// is that of an int (so, usually four bytes). This *does* limit us to only 256 different
-// block types, but in the scope of this project we'll never get anywhere near that many.
 enum BlockType : unsigned char
 {
     EMPTY, GRASS, DIRT, STONE, WATER, SNOW, LAVA, BEDROCK, SAND, ORANGE_ROCK, RED_ROCK,
@@ -23,21 +26,52 @@ enum BlockType : unsigned char
     RED_MUSHROOM, YELLOW_MUSHROOM, TEAL_MUSHROOM
 };
 
+// we want to treat any blocks set to true in this map as "empty" blocks.
+// so that in our createMultithreaded code, neighbouring faces should be rendered.
+// this is generally blocks with transparency / alpha channels
+static std::unordered_map<BlockType, bool, EnumHash> hasAlpha = {
+    {EMPTY, false},
+    {GRASS, false},
+    {DIRT, false},
+    {STONE, false},
+    {WATER, true},
+    {SNOW, false},
+    {LAVA, true},
+    {BEDROCK, false},
+    {SAND, false},
+    {ORANGE_ROCK, false},
+    {RED_ROCK, false},
+    {DARKNESS, false},
+    {BLACK_ROCK, false},
+    {TORCH, true},
+    {LIGHT_LEAVES, false},
+    {DARK_LEAVES, false},
+    {LIGHT_WOOD, false},
+    {MEDIUM_WOOD, false},
+    {DARK_WOOD, false},
+    {ICE, false},
+    {FAT_BUSH, true},
+    {SKINNY_BUSH, true},
+    {DESERT_BUSH, true},
+    {LIGHT_GRASS, true},
+    {SHORT_GRASS, true},
+    {MEDIUM_GRASS, true},
+    {CACTUS, false},
+    {YELLOW_FLOWER, true},
+    {RED_FLOWER, true},
+    {WINTER_TREE, true},
+    {MUD, false},
+    {MUSHROOM_STEM, false},
+    {BLUE_MUSHROOM, false},
+    {RED_MUSHROOM, false},
+    {YELLOW_MUSHROOM, false},
+    {TEAL_MUSHROOM, false}
+};
+
 // The six cardinal directions in 3D space
 enum Direction : unsigned char
 {
     XPOS, XNEG, YPOS, YNEG, ZPOS, ZNEG
-};
-
-
-
-// Lets us use any enum class as the key of a
-// std::unordered_map
-struct EnumHash {
-    template <typename T>
-    size_t operator()(T t) const {
-        return static_cast<size_t>(t);
-    }
 };
 
 
