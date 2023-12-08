@@ -93,8 +93,9 @@ void main()
 
     // animated water / lava
     if (fs_UV.z != 0) {
-        offset.x = u_Time % 100 * 0.005 / 10;
-        uv += offset;
+        float oscillation = (sin(u_Time * 0.02) + 1) / 2; // oscillates between -1 and 1
+        offset.x = oscillation * 100 * 0.005 / 10; // scale to 100 units
+        uv -= offset;
     }
 
     vec4 textureColor = texture(u_Texture, uv); // Sample the texture
