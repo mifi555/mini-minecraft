@@ -28,7 +28,7 @@ enum BlockType : unsigned char
 
 // we want to treat any blocks set to true in this map as "empty" blocks.
 // so that in our createMultithreaded code, neighbouring faces should be rendered.
-// this is generally blocks with transparency / alpha channels
+// this is generally blocks with transparency / alpha channels i.e. Water, Lava and vegetation
 static std::unordered_map<BlockType, bool, EnumHash> hasAlpha = {
     {EMPTY, false},
     {GRASS, false},
