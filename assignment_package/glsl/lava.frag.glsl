@@ -49,10 +49,8 @@ float surflet(vec2 P, vec2 gridPoint) {
     return height * tX * tY;
 }
 
-
 float perlinNoise(vec2 uv) {
     float surfletSum = 0.f;
-
     // Iterate over the four integer corners surrounding uv
     for(int dx = 0; dx <= 1; ++dx) {
             for(int dy = 0; dy <= 1; ++dy) {
@@ -62,20 +60,20 @@ float perlinNoise(vec2 uv) {
     return surfletSum;
 }
 
-
-
 vec4 setColor() {
     float distance = WorleyNoise(fs_UV) * WorleyNoise(fs_UV) * WorleyNoise(fs_UV);
     vec2 point = random2(fs_UV);
-    vec4 original_Texture = texture(u_RenderedTexture, fs_UV),
+    vec2 new_UV = fs_UV;
+    new_UV = new_UV + (0.035 * WorleyNoise(new_UV) * sin(u_Time * 0.01));
+    vec4 original_Texture = texture(u_RenderedTexture, new_UV),
          cell_Texture = texture(u_RenderedTexture, point);
 
     color = vec4(0, 0, 0, 0);
 
     // Modify original texture color based on time, Worley noise, and the cell's color sample.
-    color[0] = original_Texture[0] + sin(original_Texture[0] * cell_Texture[0] * (u_Time % 600) * 0.1);
-    color[1] = (original_Texture[1]) * 0.3;
-    color[2] = (original_Texture[2]) * 0.3;
+    color[0] = original_Texture[0] * 1.2;
+    color[1] = original_Texture[1] * 0.3;
+    color[2] = original_Texture[2] * 0.3;
     color[3] = 1.0;
 
     return color;

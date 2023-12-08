@@ -112,9 +112,20 @@ public:
     static float surflet3D(glm::vec3 p, glm::vec3 gridPoint);
     static float worleyNoise(glm::vec2 coords);
 
-    // terrain generators
+    // Terrain generators.
 
     static float grasslandsYValue(glm::vec2 coords);
     static float mountainsYValue(glm::vec2 coords);
-    static float biomeBlender(glm::vec2 coords);
+    static float plateauRavineYValue(glm::vec2 coords);
+    static float mushroomFieldsYValue(glm::vec2 coords);
+    static float biomeBlenderHumid(glm::vec2 coords);
+    static float biomeBlenderDry(glm::vec2 coords);
+    static float calculateHumidity(glm::vec2 coords);
+
+    // Procedural asset placement and primitive generators.
+
+    static void placeAsset(Chunk* chunk, int x, int y, int z, BlockType maxBlock);
+    static void placeTree(Chunk* chunk, int x, int y, int z, BlockType woodType);
+    static void placeLargeMushroom(Chunk* chunk, int x, int y, int z);
+    static void placeSmallMushroom(Chunk* chunk, int x, int y, int z);
 };
