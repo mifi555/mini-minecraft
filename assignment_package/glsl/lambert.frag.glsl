@@ -16,8 +16,6 @@
 
 uniform sampler2D u_Texture; // The texture to be read from by this shader
 uniform int u_Time; //time variable to animate WATER and LAVA blocks
-
-
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
 
 // These are the interpolated values out of the rasterizer, so you can't know
@@ -82,6 +80,50 @@ float fbm(vec3 p) {
     return sum;
 }
 
+vec4 setTextureColor(float r, float g, float b, vec4 textureColor) {
+    textureColor[0] = r;
+    textureColor[1] = g;
+    textureColor[2] = b;
+
+    return textureColor;
+}
+
+vec4 editBlockColors(vec2 uv, vec4 textureColor) {
+    vec4 newTextureColor = textureColor;
+
+    if ((uv.x >= 3.f/16.f && uv.x <= 4.f/16.f) && uv.y >= 15.f/16.f) {
+        // Grass side.
+        if (newTextureColor[0] < 0.5) {
+            newTextureColor = setTextureColor(0.0431f, 0.51373f, 0.23137f, newTextureColor);
+        }
+    } else if ((uv.x >= 8.f/16.f && uv.x <= 9.f/16.f) && (uv.y >= 13.f/16.f && uv.y <= 14.f/16.f)) {
+        // Grass top.
+        newTextureColor = setTextureColor(newTextureColor[0] * 0.2f, newTextureColor[1] * 0.8f, newTextureColor[2] * 0.6f, newTextureColor);
+    } else if ((uv.x >= 2.f/16.f && uv.x <= 3.f/16.f) && uv.y >= 15.f/16.f) {
+        // Dirt block.
+        if (newTextureColor[0] < 0.5) {
+            newTextureColor = setTextureColor(newTextureColor[0] = 0.0431f, newTextureColor[1] = 0.51373f, newTextureColor[2] = 0.23137f, newTextureColor);
+        }
+    } else if ((uv.x >= 2.f/16.f && uv.x <= 3.f/16.f) && (uv.y >= 8.f/16.f && uv.y <= 9.f/16.f)) {
+        // Black rock.
+        newTextureColor = setTextureColor(newTextureColor[0], newTextureColor[1] * 1.2, newTextureColor[2] * 1.3, newTextureColor);
+    } else if ((uv.x >= 2.f/16.f && uv.x <= 3.f/16.f) && (uv.y >= 2.f/16.f && uv.y <= 3.f/16.f)) {
+        // Orange rock.
+        newTextureColor = setTextureColor(newTextureColor[0], newTextureColor[1] * 0.8, 0.0, newTextureColor);
+    } else if ((uv.x >= 5.f/16.f && uv.x <= 6.f/16.f) && (uv.y >= 13.f/16.f && uv.y <= 14.f/16.f)) {
+        // Cave blocks.
+        newTextureColor = setTextureColor(newTextureColor[0] * 0.2, newTextureColor[1] * 1.6, newTextureColor[2] * 1.4, newTextureColor);
+    } else if ((uv.x >= 7.f/16.f && uv.x <= 8.f/16.f) && (uv.y >= 9.f/16.f && uv.y <= 10.f/16.f)) {
+        // Teal mushroom.
+        newTextureColor = setTextureColor(newTextureColor[0] * 0.1, newTextureColor[1] * 2, newTextureColor[2] * 2, newTextureColor);
+    } else if ((uv.x >= 8.f/16.f && uv.x <= 9.f/16.f) && (uv.y >= 9.f/16.f && uv.y <= 10.f/16.f)) {
+        // Mud blocks for mushroom fields.
+        newTextureColor = setTextureColor(newTextureColor[0] * 1.2, newTextureColor[1] * 1.2, newTextureColor[2] * 1.2, newTextureColor);
+    }
+
+    return newTextureColor;
+}
+
 void main()
 {
     //bool animateable = fs_UV.z;
@@ -99,6 +141,9 @@ void main()
     }
 
     vec4 textureColor = texture(u_Texture, uv); // Sample the texture
+
+    // Modify texture colors depending on block type.
+    textureColor = editBlockColors(uv, textureColor);
 
     // Material base color (before shading)
 
@@ -127,6 +172,4 @@ void main()
         // Compute final shaded color
         out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
         //out_Col = vec4(vec3(fs_UV.xy, 0) * lightIntensity, diffuseColor.a);
-
-
 }

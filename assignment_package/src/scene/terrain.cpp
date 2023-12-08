@@ -337,46 +337,125 @@ void Terrain::generateChunkTerrain(Chunk* chunk) {
 
             glm::vec2 worldPos = glm::vec2(minX + x, minZ + z);
 
-            float grass = grasslandsYValue(glm::vec2(worldPos[0], worldPos[1]));
-            float mountains = mountainsYValue(glm::vec2(worldPos[0], worldPos[1]));
-            float t = biomeBlender(glm::vec2(minX + x, minZ + z));
-            t = glm::smoothstep(0.6f, 0.4f, t);
-            int yMax = glm::mix(grass, mountains, t);
+            float grass = grasslandsYValue(worldPos);
+            float mountains = mountainsYValue(worldPos);
+            float mushroomFields = mushroomFieldsYValue(worldPos);
+            float ravine = plateauRavineYValue(worldPos);
+            float t1 = biomeBlenderHumid(glm::vec2(minX + x, minZ + z));
+            float t2 = biomeBlenderDry(glm::vec2(minX + x, minZ + z));
+            t1 = glm::smoothstep(0.6f, 0.4f, t1);
+            t2 = glm::smoothstep(0.54f, 0.46f, t2);
+            int yMaxHumid = glm::mix(grass, mountains, t1);
+            int yMaxDry = glm::mix(mushroomFields, ravine, t2);
 
-            yMax = int(glm::clamp(float(yMax), 0.f, 255.f));
+            float humidity = calculateHumidity(worldPos);
+            float yMax;
+            float threshold = 0.05f;
+
+            yMaxHumid = int(glm::clamp(float(yMaxHumid), 0.f, 255.f));
+            yMaxDry = int(glm::clamp(float(yMaxDry), 0.f, 255.f));
+
+            // Set yMax and enable smoothed biome blending.
+            if (std::abs(humidity - 0.5f) <= threshold) {
+                float upperBound = std::max(yMaxDry, yMaxHumid);
+                float lowerBound = std::min(yMaxDry, yMaxHumid);
+
+                yMax = floor(glm::mix(lowerBound, upperBound, (humidity - (0.5f - threshold)) / (2.0f * threshold)));
+            } else if (humidity >= 0.5) {
+                yMax = yMaxHumid;
+            } else {
+                yMax = yMaxDry;
+            }
 
             for (int y = 0; y < yMax + 1; y++) {
-                // Bedrock layer.
-                if (y == 0) {
-                    chunk->setBlockAt(x, y, z, BEDROCK);
-                    // Lava flow - mountains biome.
-                } else if ((yMax == 160 && y == 160) || (yMax == 175 && y == 175) || (yMax == 190 && y == 190)) {
-                    chunk->setBlockAt(x, y, z, LAVA);
+                // Base layering.
+                if (y <= 128) {
+                    // Bedrock layer.
+                    if (y == 0) {
+                        chunk->setBlockAt(x, y, z, BEDROCK);
                     // Stone layer.
-                } else if (y <= 128) {
-                    chunk->setBlockAt(x, y, z, STONE);
-                    // Water pools.
-                } else if (y > 128 && yMax <= 133) {
-                    // Sand layer.
-                    chunk->setBlockAt(x, y, z, SAND);
+                    } else if (y <= 128) {
+                        chunk->setBlockAt(x, y, z, DARKNESS);
+                    }
+                }
 
-                    if (y == yMax) {
-                        for (int i = y + 1; i <= 134; i++) {
-                            chunk->setBlockAt(x, i, z, WATER);
+                // Volcanic islands (humid biomes) placement.
+                if (humidity >= 0.5) {
+                    // Magma layer, mountains biome.
+                    if ((yMax == 160 && y == 160) || (yMax == 175 && y == 175) || (yMax == 190 && y == 190)) {
+                        chunk->setBlockAt(x, y, z, ORANGE_ROCK);
+                    // Sea placement.
+                    } else if (y > 128 && yMax <= 133) {
+                        // Sand layer.
+                        chunk->setBlockAt(x, y, z, SAND);
+
+                        if (y == yMax) {
+                            for (int i = y + 1; i <= 134; i++) {
+                                chunk->setBlockAt(x, i, z, WATER);
+                            }
+                        }
+                    // Dirt layer - grass biome and pools.
+                    } else if (y > 128 && yMax <= 150 && y < yMax) {
+                        chunk->setBlockAt(x, y, z, DIRT);
+                    // Grass layer.
+                    } else if (y > 128 && yMax <= 150 && y == yMax) {
+                        chunk->setBlockAt(x, y, z, GRASS);
+
+                        placeAsset(chunk, x, y + 1, z, GRASS);
+                        // Ash layer - mountains biome.
+                    } else if (y > 200 && y == yMax) {
+                        chunk->setBlockAt(x, y, z, STONE);
+                        // Mountains layer.
+                    } else if (y > 128 && yMax > 150) {
+                        chunk->setBlockAt(x, y, z, BLACK_ROCK);
+                    }
+                // Mushroom ravine (dry biomes) placement.
+                } else if (y > 128) {
+                    // Plateau mountains.
+                    if (y >= 140) {
+                        if (y <= 150 && y == yMax) {
+                            // Bottom layers overlap with mushroom fields.
+                            chunk->setBlockAt(x, y, z, MUD);
+                        } else if (y == yMax && y >= 193) {
+                            // Set grass atop the plateau mountains.
+                            chunk->setBlockAt(x, y, z, GRASS);
+
+                            placeAsset(chunk, x, y + 1, z, GRASS);
+                        } else {
+                            // Mountain blocks.
+                            chunk->setBlockAt(x, y, z, BLACK_ROCK);
+                        }
+
+                        if (y == yMax && y <= 144) {
+                            // For mushroom biome blending.
+                            for (int i = y + 1; i <= 145; i++) {
+                                chunk->setBlockAt(x, i, z, MUD);
+                            }
+
+                            placeAsset(chunk, x, 145, z, MUD);
+                        } else if (y == yMax && y <= 150) {
+                            placeAsset(chunk, x, y + 1, z, MUD);
+                        }
+                    } else {
+                        // Mushroom fields.
+                        chunk->setBlockAt(x, y, z, MUD);
+
+                        if (y == yMax && (y == 129 || y == 130)) {
+                            if (y == yMax) {
+                                // Blend biome with rest of ocean.
+                                for (int i = y + 1; i <= 134; i++) {
+                                    chunk->setBlockAt(x, i, z, WATER);
+                                }
+                            }
+                        } else if (y == yMax) {
+                            // Layer mud to account for ocean blending.
+                            for (int i = y + 1; i <= y + 5; i++) {
+                                chunk->setBlockAt(x, i, z, MUD);
+                            }
+
+                            placeAsset(chunk, x, y + 6, z, MUD);
                         }
                     }
-                    // Dirt layer - grass biome and pools.
-                } else if (y > 128 && yMax <= 150 && y < yMax) {
-                    chunk->setBlockAt(x, y, z, DIRT);
-                    // Grass layer.
-                } else if (y > 128 && yMax <= 150 && y == yMax) {
-                    chunk->setBlockAt(x, y, z, GRASS);
-                    // Snow layer - mountains biome.
-                } else if (y > 200 && y == yMax) {
-                    chunk->setBlockAt(x, y, z, SNOW);
-                    // Mountains layer.
-                } else if (y > 128 && yMax > 150) {
-                    chunk->setBlockAt(x, y, z, STONE);
                 }
             }
 
@@ -487,7 +566,6 @@ void Terrain::initializeTerrain()
         }
     }
 }
-
 
 // Various noise functions used for terrain biome generation.
 glm::vec2 Terrain::smoothF(glm::vec2 coords) {
@@ -680,7 +758,7 @@ float Terrain::mountainsYValue(glm::vec2 coords) {
     // Noise based height generation.
     for(int i = 0; i < 4; ++i) {
         glm::vec2 offset = glm::vec2(fbm(coords / 256.f), fbm(coords / 300.f) + 1000);
-        float h1 = tan(perlinNoise((coords + offset * 45.f) / freq)) * perlinNoise((coords + offset * 45.f) / freq) * 5;
+        float h1 = tan(perlinNoise((coords + offset * 45.f) / freq)) * perlinNoise((coords + offset * 45.f) / freq) * 4.7;
 
         h += h1 * amp;
         amp *= 0.5;
@@ -695,6 +773,264 @@ float Terrain::mountainsYValue(glm::vec2 coords) {
     return yValue;
 }
 
-float Terrain::biomeBlender(glm::vec2 coords) {
+float Terrain::plateauRavineYValue(glm::vec2 coords) {
+    float h = 0, amp = 0.4, freq = 64, yValue = 1;
+
+    // Noise based height generation.
+    for(int i = 0; i < 4; ++i) {
+        glm::vec2 offset = glm::vec2(perlinNoise(coords / 256.f), perlinNoise(coords / 300.f) + 1000);
+        float h1 = cos(perlinNoise((coords + offset * 45.f) / freq)) *
+                   cos(perlinNoise((coords + offset * -13.f) / freq)) *
+                   perlinNoise((coords + offset * 45.f) / freq) *
+                   5;
+
+        h += h1 * amp;
+        amp *= 0.5;
+        freq *= 0.5;
+    }
+
+    yValue = floor((150 + h * 160 * 1.5));
+
+    // Enforce height bounds.
+    yValue = glm::clamp(yValue, 150.f, 198.f);
+
+    return yValue;
+}
+
+float Terrain::mushroomFieldsYValue(glm::vec2 coords) {
+    float h = 0, amp = 0.5, freq = 200, yValue = 1;
+
+    // Noise based height generation.
+    for(int i = 0; i < 4; ++i) {
+        glm::vec2 offset = glm::vec2(fbm(coords / 256.f), fbm(coords / 256.f) + 1000);
+        float h1 = (perlinNoise((coords + offset * 25.f) / freq) * perlinNoise((coords + offset * 25.f) / freq));
+
+        h += h1 * amp;
+        amp *= 0.5;
+        freq *= 0.5;
+    }
+
+    yValue = floor(129 + h * 40);
+
+    // Enforce height bounds.
+    yValue = glm::clamp(yValue, 129.f, 140.f);
+
+    return yValue;
+}
+
+float Terrain::biomeBlenderHumid(glm::vec2 coords) {
     return 0.5 * (perlinNoise(coords / 364.f) + 1.f);
+}
+
+float Terrain::biomeBlenderDry(glm::vec2 coords) {
+    return 0.5 * (perlinNoise(coords / 560.f) + 1.f);
+}
+
+float Terrain::calculateHumidity(glm::vec2 coords) {
+    return 0.4 * (perlinNoise(coords / 900.f) + 1.f) * (perlinNoise(coords / 900.f) + 1.f);
+}
+
+void Terrain::placeAsset(Chunk* chunk, int x, int y, int z, BlockType maxBlock) {
+    int randomValue = rand();
+
+    if (maxBlock == GRASS) {
+        // Place bushes, trees, grass, and flower assets.
+        if (randomValue % 33 == 0) {
+            chunk->setBlockAt(x, y, z, SKINNY_BUSH);
+        } else if (randomValue % 34 == 0) {
+            chunk->setBlockAt(x, y, z, FAT_BUSH);
+        } else if (randomValue % 600 == 0) {
+            placeTree(chunk, x, y, z, LIGHT_WOOD);
+        } else if (randomValue % 601 == 0) {
+            placeTree(chunk, x, y, z, MEDIUM_WOOD);
+        } else if (randomValue % 602 == 0) {
+            placeTree(chunk, x, y, z, DARK_WOOD);
+        } else if (randomValue % 8 == 0) {
+            chunk->setBlockAt(x, y, z, LIGHT_GRASS);
+        } else if (randomValue % 9 == 0) {
+            chunk->setBlockAt(x, y, z, SHORT_GRASS);
+        } else if (randomValue % 10 == 0) {
+            chunk->setBlockAt(x, y, z, MEDIUM_GRASS);
+        } else if (randomValue % 29 == 0) {
+            chunk->setBlockAt(x, y, z, YELLOW_FLOWER);
+        } else if (randomValue % 31 == 0) {
+            chunk->setBlockAt(x, y, z, RED_FLOWER);
+        }
+    } else if (maxBlock == MUD) {
+        // Place mushrooms in mushroom fields biome.
+        if (randomValue % 600 == 0) {
+            placeLargeMushroom(chunk, x, y, z);
+        } else if (randomValue % 601 == 0) {
+            placeLargeMushroom(chunk, x, y, z);
+        } else if (randomValue % 602 == 0) {
+            placeLargeMushroom(chunk, x, y, z);
+        } else if (randomValue % 299 == 0) {
+            placeSmallMushroom(chunk, x, y, z);
+        }
+    }
+}
+
+void Terrain::placeTree(Chunk* chunk, int x, int y, int z, BlockType woodType) {
+    bool leavesPlaced = false;
+
+    // Place the trunk base.
+    if (woodType == LIGHT_WOOD) {
+        chunk->setBlockAt(x, y, z, LIGHT_WOOD);
+        chunk->setBlockAt(x, y + 1, z, LIGHT_WOOD);
+        chunk->setBlockAt(x, y + 2, z, LIGHT_WOOD);
+    } else if (woodType == MEDIUM_WOOD) {
+        chunk->setBlockAt(x, y, z, MEDIUM_WOOD);
+        chunk->setBlockAt(x, y + 1, z, MEDIUM_WOOD);
+        chunk->setBlockAt(x, y + 2, z, MEDIUM_WOOD);
+    } else if (woodType == DARK_WOOD) {
+        chunk->setBlockAt(x, y, z, DARK_WOOD);
+        chunk->setBlockAt(x, y + 1, z, DARK_WOOD);
+        chunk->setBlockAt(x, y + 2, z, DARK_WOOD);
+    }
+
+    // Place the leaves.
+    for (int i = -2; i < 3; i++) {
+        for (int j = -1; j < 2; j++) {
+            for (int k = 3; k < 5; k++) {
+                // Check that we are within the chunk's bounds.
+                if ((x + j) >= 0 && (z + i) >= 0 && (x + j) < 16 && (z + i) < 16) {
+                    // Central leaves have been placed, outer leaves now acceptable.
+                    if (j == -2 || j == 2) {
+                        leavesPlaced = true;
+                    }
+
+                    if (woodType == LIGHT_WOOD || woodType == MEDIUM_WOOD) {
+                        chunk->setBlockAt(x + j, y + k, z + i, LIGHT_LEAVES);
+                    } else {
+                        chunk->setBlockAt(x + j, y + k, z + i, DARK_LEAVES);
+                    }
+
+                    if (j >= -1 && j <= 1 && i >= -1 && i <= 1) {
+                        if (woodType == LIGHT_WOOD || woodType == MEDIUM_WOOD) {
+                            chunk->setBlockAt(x + j, y + k + 1, z + i, LIGHT_LEAVES);
+                        } else {
+                            chunk->setBlockAt(x + j, y + k + 1, z + i, DARK_LEAVES);
+                        }
+
+                        if (i == 0 || j == 0) {
+                            if (woodType == LIGHT_WOOD || woodType == MEDIUM_WOOD) {
+                                chunk->setBlockAt(x + j, y + k + 2, z + i, LIGHT_LEAVES);
+                            } else {
+                                chunk->setBlockAt(x + j, y + k + 2, z + i, DARK_LEAVES);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // If central leaves have been placed, place outer leaves.
+    if (leavesPlaced == true) {
+        for (int i = -1; i < 2; i++) {
+            for (int k = 3; k < 5; k++) {
+                // Check that we are within the chunk's bounds.
+                if (z + i >= 0 && z + i < 16) {
+                    if (woodType == LIGHT_WOOD || woodType == MEDIUM_WOOD) {
+                        chunk->setBlockAt(x - 2, y + k, z + i, LIGHT_LEAVES);
+                        chunk->setBlockAt(x + 2, y + k, z + i, LIGHT_LEAVES);
+                    } else {
+                        chunk->setBlockAt(x - 2, y + k, z + i, DARK_LEAVES);
+                        chunk->setBlockAt(x + 2, y + k, z + i, DARK_LEAVES);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Terrain::placeLargeMushroom(Chunk* chunk, int x, int y, int z) {
+    BlockType mushroom;
+
+    int randomValue = rand();
+
+    if (randomValue % 3 == 0) {
+        mushroom = BLUE_MUSHROOM;
+    } else if (randomValue % 4 == 0) {
+        mushroom = YELLOW_MUSHROOM;
+    } else if (randomValue % 2 == 0) {
+        mushroom = RED_MUSHROOM;
+    } else {
+        mushroom = TEAL_MUSHROOM;
+    }
+
+    // Place the mushroom base.
+    for (int i = y; i < y + 3; i++) {
+        chunk->setBlockAt(x, i, z, MUSHROOM_STEM);
+    }
+
+    // Place more blocks along z axis.
+    for (int yIter = y + 3; yIter < y + 6; yIter++) {
+        for (int xIter = x - 1; xIter < x + 2; xIter++) {
+            for (int zIter = z - 2; zIter < z + 3; zIter++) {
+                if (xIter >= 0 && xIter < 16 && zIter >= 0 && zIter < 16) {
+                    chunk->setBlockAt(xIter, yIter, zIter, mushroom);
+                }
+            }
+        }
+    }
+
+    // Place more blocks along x axis.
+    for (int yIter = y + 3; yIter < y + 6; yIter++) {
+        for (int xIter = x - 2; xIter < x + 3; xIter++) {
+            for (int zIter = z - 1; zIter < z + 2; zIter++) {
+                if (xIter >= 0 && xIter < 16 && zIter >= 0 && zIter < 16) {
+                    chunk->setBlockAt(xIter, yIter, zIter, mushroom);
+                }
+            }
+        }
+    }
+
+    // Place top layer of mushroom.
+    for (int xIter = x - 1; xIter < x + 2; xIter++) {
+        for (int zIter = z - 1; zIter < z + 2; zIter++) {
+            if (xIter >= 0 && xIter < 16 && zIter >= 0 && zIter < 16) {
+                chunk->setBlockAt(xIter, y + 6, zIter, mushroom);
+            }
+        }
+    }
+}
+
+void Terrain::placeSmallMushroom(Chunk* chunk, int x, int y, int z) {
+    BlockType mushroom;
+
+    int randomValue = rand();
+
+    if (randomValue % 3 == 0) {
+        mushroom = BLUE_MUSHROOM;
+    } else if (randomValue % 4 == 0) {
+        mushroom = YELLOW_MUSHROOM;
+    } else if (randomValue % 2 == 0) {
+        mushroom = RED_MUSHROOM;
+    } else {
+        mushroom = TEAL_MUSHROOM;
+    }
+
+    // Place the mushroom base.
+    for (int i = y; i < y + 3; i++) {
+        chunk->setBlockAt(x, i, z, MUSHROOM_STEM);
+    }
+
+    // Place more blocks along z axis.
+    for (int xIter = x - 1; xIter < x + 2; xIter++) {
+        for (int zIter = z - 2; zIter < z + 3; zIter++) {
+            if (xIter >= 0 && xIter < 16 && zIter >= 0 && zIter < 16) {
+                chunk->setBlockAt(xIter, y + 3, zIter, mushroom);
+            }
+        }
+    }
+
+    // Place more blocks along x axis.
+    for (int xIter = x - 2; xIter < x + 3; xIter++) {
+        for (int zIter = z - 1; zIter < z + 2; zIter++) {
+            if (xIter >= 0 && xIter < 16 && zIter >= 0 && zIter < 16) {
+                chunk->setBlockAt(xIter, y + 3, zIter, mushroom);
+            }
+        }
+    }
 }
