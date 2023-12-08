@@ -177,7 +177,7 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
 
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
 
-                        // for water, we only care about drawing it's top face
+                        // this is hacky, but for water, we only care about drawing it's top face
                         if ((current == WATER && n.pos != ChunkConstants::TopFace)) {
                             continue;
                         }
@@ -185,18 +185,18 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                         glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
                         BlockType neighbour;
 
-                        // we have to check if the neighbouring edge belongs to a neighouring chunk
-                        if (offset.y < 0 || offset.y > 255) { // it's always gonna be empty
+                        // we have to check if the neighbouring block belongs to another chunk
+                        if (offset.y < 0 || offset.y > 255) { // the y limits of our world, it's always gonna be empty
                             neighbour = EMPTY;
-                        } else if (offset.x < 0 || offset.x > 15) {  // east and west chunks
+                        } else if (offset.x < 0 || offset.x > 15) {  // east and west neighbouring chunks
                             Direction direction = offset.x < 0 ? XNEG : XPOS;
                             Chunk* neighbouringChunk = m_neighbors.at(direction);
                             neighbour = neighbouringChunk ? neighbouringChunk->getBlockAt(mod(offset.x, 16), y, z) : EMPTY;
-                        } else if (offset.z < 0 || offset.z > 15) {  // north and south chunks
+                        } else if (offset.z < 0 || offset.z > 15) {  // north and south neighbouring chunks
                             Direction direction = offset.z < 0 ? ZNEG : ZPOS;
                             Chunk* neighbouringChunk = m_neighbors.at(direction);
                             neighbour = neighbouringChunk ? neighbouringChunk->getBlockAt(x, y, mod(offset.z, 16)) : EMPTY;
-                        } else {                                     // within the current chunk
+                        } else {                                     // in the current chunk
                             neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         }
 
@@ -230,7 +230,6 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                                     break;
                                 case 2:
                                     uv = uvBottomRight;
-
                                     break;
                                 case 3:
                                     uv = uvTopRight;
@@ -241,9 +240,7 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
 
                                 insertVec4(vboData, pos);  // vertex position
                                 insertVec4(vboData, n.nor); // vertex normal
-
-                                //store animateable flag in z coordinate
-                                insertVec4(vboData, glm::vec4(uv[0], uv[1], animatable, 0));
+                                insertVec4(vboData, glm::vec4(uv[0], uv[1], animatable, 0)); // uv coords. z coordinate is used as a "animateable" flag
                                 faceIndices.at(i) = idxCounter++;
                             }
                             // add index data for this face
