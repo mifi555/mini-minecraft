@@ -178,14 +178,12 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
 
                         // for water, we only care about drawing it's top face
-                        if (current == WATER && n.pos != ChunkConstants::TopFace) {
+                        if ((current == WATER && n.pos != ChunkConstants::TopFace)) {
                             continue;
                         }
 
                         glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
-
                         BlockType neighbour;
-                        Chunk* neighbouringChunk = nullptr;
 
                         // we have to check if the neighbouring edge belongs to a neighouring chunk
                         if (offset.y < 0 || offset.y > 255) { // it's always gonna be empty
@@ -202,7 +200,7 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                             neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         }
 
-                        if (neighbour == EMPTY || (current != WATER && neighbour == WATER)) {
+                        if (neighbour == EMPTY || (current != WATER && neighbour == WATER) || (current != LAVA && neighbour == LAVA)) {
                             std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
                             for (size_t i = 0; i < n.pos.size(); i++) {
 
