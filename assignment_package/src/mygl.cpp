@@ -255,7 +255,7 @@ void MyGL::performPostprocessRenderPass() {
 
         m_progWater.draw(m_quad, m_frameBuffer.getTextureSlot());
         m_progWater.setTime(m_time);
-        // Display lava.
+    // Display lava.
     } else if (m_player.m_lava == true) {
         m_progLava.setModelMatrix(glm::mat4());
         m_progLava.setViewProjMatrix(m_player.mcr_camera.getViewProj());
@@ -269,7 +269,6 @@ void MyGL::performPostprocessRenderPass() {
 
     m_time++;
 }
-
 
 // This function is called whenever update() is called.
 // MyGL's constructor links update() to a timer that fires 60 times per second,

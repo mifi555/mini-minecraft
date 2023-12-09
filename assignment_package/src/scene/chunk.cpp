@@ -141,16 +141,8 @@ void createFaceIndices(std::vector<GLuint>& idxData, const std::array<GLuint, Ch
 void Chunk::createMultithreaded(ChunkVBOData& data) {
     // TODO: For transparent types, we'll need to populate a "transparent" buffer that will be drawn seperately.
 
-    // **texturing**
-    // map stores transparency information
-    std::unordered_map<BlockType, bool> blockTransparency = {
-        {EMPTY, false},
-        {GRASS, false},
-        {DIRT, false},
-        {STONE, false},
-        {WATER, true},
-        {SNOW, false}
-    };
+    // modulo operator that returns a remainder that is the same sign as it's operand
+    auto mod = [](int a, int b) { return (a % b + b) % b; };
 
     int idxCounterOpaque = 0;
     int idxCounterTransparent = 0;
@@ -162,31 +154,39 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
             for (int x = 0; x < 16; x++) {
                 BlockType current = this->getBlockAt(x, y, z);
 
-                bool isBlockTransparent = blockTransparency[current];
-
-                std::vector<GLfloat> &vboData = isBlockTransparent ? data.vboDataTransparent : data.vboDataOpaque;
-                std::vector<GLuint> &idxData = isBlockTransparent ? data.idxDataTransparent : data.idxDataOpaque;
-                int &idxCounter = isBlockTransparent ? idxCounterTransparent : idxCounterOpaque;
+                std::vector<GLfloat> &vboData = current == WATER ? data.vboDataTransparent : data.vboDataOpaque;
+                std::vector<GLuint> &idxData = current == WATER ? data.idxDataTransparent : data.idxDataOpaque;
+                int &idxCounter = current == WATER ? idxCounterTransparent : idxCounterOpaque;
 
                 if (current != EMPTY) {
-
                     // Choose the right buffer and counter based on transparency
 
                     for (const ChunkConstants::BlockFace &n : ChunkConstants::neighbouringFaces) {
-                        glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
 
+                        // this is hacky, but for water, we only care about drawing it's top face
+                        if ((current == WATER && n.pos != ChunkConstants::TopFace)) {
+                            continue;
+                        }
+
+                        glm::ivec3 offset = glm::ivec3(x, y, z) + n.direction;
                         BlockType neighbour;
 
-                        if (offset.x < 0 || offset.x > 15 ||
-                            offset.y < 0 || offset.y > 255 ||
-                            offset.z < 0 || offset.z > 15) {
+                        // we have to check if the neighbouring block belongs to another chunk
+                        if (offset.y < 0 || offset.y > 255) { // the y limits of our world, it's always gonna be empty
                             neighbour = EMPTY;
-
-                        } else {
+                        } else if (offset.x < 0 || offset.x > 15) {  // east and west neighbouring chunks
+                            Direction direction = offset.x < 0 ? XNEG : XPOS;
+                            Chunk* neighbouringChunk = m_neighbors.at(direction);
+                            neighbour = neighbouringChunk ? neighbouringChunk->getBlockAt(mod(offset.x, 16), y, z) : EMPTY;
+                        } else if (offset.z < 0 || offset.z > 15) {  // north and south neighbouring chunks
+                            Direction direction = offset.z < 0 ? ZNEG : ZPOS;
+                            Chunk* neighbouringChunk = m_neighbors.at(direction);
+                            neighbour = neighbouringChunk ? neighbouringChunk->getBlockAt(x, y, mod(offset.z, 16)) : EMPTY;
+                        } else {                                     // in the current chunk
                             neighbour = this->getBlockAt(offset.x, offset.y, offset.z);
                         }
 
-                        if (neighbour == EMPTY) {
+                        if (neighbour == EMPTY || (!hasAlpha[current] && hasAlpha[neighbour])) {
                             std::array<GLuint, ChunkConstants::VERT_COUNT> faceIndices;
                             for (size_t i = 0; i < n.pos.size(); i++) {
 
@@ -216,7 +216,6 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
                                     break;
                                 case 2:
                                     uv = uvBottomRight;
-
                                     break;
                                 case 3:
                                     uv = uvTopRight;
@@ -227,15 +226,7 @@ void Chunk::createMultithreaded(ChunkVBOData& data) {
 
                                 insertVec4(vboData, pos);  // vertex position
                                 insertVec4(vboData, n.nor); // vertex normal
-
-                                //store animateable flag in z coordinate
-                                insertVec4(vboData, glm::vec4(uv[0], uv[1], animatable, 0));
-
-                                //                                insertVec4(                                                  // vertex color
-                                //                                    vboData,
-                                //                                    ChunkConstants::blocktype_to_color.at(current)
-                                //                                    );
-
+                                insertVec4(vboData, glm::vec4(uv[0], uv[1], animatable, 0)); // uv coords. z coordinate is used as a "animateable" flag
                                 faceIndices.at(i) = idxCounter++;
                             }
                             // add index data for this face

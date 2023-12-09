@@ -101,6 +101,49 @@ vec3 computeSunPosition(float time) {
     float angle = time * TWO_PI; // Full circle over a period of time
     // Compute sun position here (modify as needed)
     return vec3(normalize(sunRotation(normalize(vec3(0, -1.0, 0)), angle)));
+
+vec4 setTextureColor(float r, float g, float b, vec4 textureColor) {
+    textureColor[0] = r;
+    textureColor[1] = g;
+    textureColor[2] = b;
+
+    return textureColor;
+}
+
+vec4 editBlockColors(vec2 uv, vec4 textureColor) {
+    vec4 newTextureColor = textureColor;
+
+    if ((uv.x >= 3.f/16.f && uv.x <= 4.f/16.f) && uv.y >= 15.f/16.f) {
+        // Grass side.
+        if (newTextureColor[0] < 0.5) {
+            newTextureColor = setTextureColor(0.0431f, 0.51373f, 0.23137f, newTextureColor);
+        }
+    } else if ((uv.x >= 8.f/16.f && uv.x <= 9.f/16.f) && (uv.y >= 13.f/16.f && uv.y <= 14.f/16.f)) {
+        // Grass top.
+        newTextureColor = setTextureColor(newTextureColor[0] * 0.2f, newTextureColor[1] * 0.8f, newTextureColor[2] * 0.6f, newTextureColor);
+    } else if ((uv.x >= 2.f/16.f && uv.x <= 3.f/16.f) && uv.y >= 15.f/16.f) {
+        // Dirt block.
+        if (newTextureColor[0] < 0.5) {
+            newTextureColor = setTextureColor(newTextureColor[0] = 0.0431f, newTextureColor[1] = 0.51373f, newTextureColor[2] = 0.23137f, newTextureColor);
+        }
+    } else if ((uv.x >= 2.f/16.f && uv.x <= 3.f/16.f) && (uv.y >= 8.f/16.f && uv.y <= 9.f/16.f)) {
+        // Black rock.
+        newTextureColor = setTextureColor(newTextureColor[0], newTextureColor[1] * 1.2, newTextureColor[2] * 1.3, newTextureColor);
+    } else if ((uv.x >= 2.f/16.f && uv.x <= 3.f/16.f) && (uv.y >= 2.f/16.f && uv.y <= 3.f/16.f)) {
+        // Orange rock.
+        newTextureColor = setTextureColor(newTextureColor[0], newTextureColor[1] * 0.8, 0.0, newTextureColor);
+    } else if ((uv.x >= 5.f/16.f && uv.x <= 6.f/16.f) && (uv.y >= 13.f/16.f && uv.y <= 14.f/16.f)) {
+        // Cave blocks.
+        newTextureColor = setTextureColor(newTextureColor[0] * 0.2, newTextureColor[1] * 1.6, newTextureColor[2] * 1.4, newTextureColor);
+    } else if ((uv.x >= 7.f/16.f && uv.x <= 8.f/16.f) && (uv.y >= 9.f/16.f && uv.y <= 10.f/16.f)) {
+        // Teal mushroom.
+        newTextureColor = setTextureColor(newTextureColor[0] * 0.1, newTextureColor[1] * 2, newTextureColor[2] * 2, newTextureColor);
+    } else if ((uv.x >= 8.f/16.f && uv.x <= 9.f/16.f) && (uv.y >= 9.f/16.f && uv.y <= 10.f/16.f)) {
+        // Mud blocks for mushroom fields.
+        newTextureColor = setTextureColor(newTextureColor[0] * 1.2, newTextureColor[1] * 1.2, newTextureColor[2] * 1.2, newTextureColor);
+    }
+
+    return newTextureColor;
 }
 
 void main()
@@ -112,11 +155,15 @@ void main()
 
     // animated water / lava
     if (fs_UV.z != 0) {
-        offset.x = u_Time % 100 * 0.005 / 10;
-        uv += offset;
+        float oscillation = (sin(u_Time * 0.02) + 1) / 2; // oscillates between -1 and 1
+        offset.x = oscillation * 100 * 0.005 / 10; // scale to 100 units
+        uv -= offset;
     }
 
     vec4 textureColor = texture(u_Texture, uv); // Sample the texture
+
+    // Modify texture colors depending on block type.
+    textureColor = editBlockColors(uv, textureColor);
 
     // Material base color (before shading)
 
@@ -151,6 +198,7 @@ void main()
 
         vec4 fog = vec4(0.75, 0.75, 0.75, 1);
         float dist = length(fs_Pos.xz - u_Player.xz) * 0.01; // fog moves with player
+        
         // Compute final shaded color
         vec4 color = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
         color = mix(color, fog, pow(smoothstep(0, 1, min(1, dist)), 2));
@@ -161,5 +209,6 @@ void main()
         //UNCOMMENT TO REMOVE FOG
         //out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
 
+        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
         //out_Col = vec4(vec3(fs_UV.xy, 0) * lightIntensity, diffuseColor.a);
 }

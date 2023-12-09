@@ -41,7 +41,7 @@ void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
 
     // Player slow down when swimming.
     if (m_water == true || m_lava == true) {
-        acceleration_scalar *= float(2.0f/3.0f);
+        acceleration_scalar *= float(1.0f/3.0f);
     }
 
     m_acceleration = glm::vec3(0,0,0);
@@ -100,8 +100,15 @@ void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
         //Spacebar -> Add a vertical component to the player's velocity to make them jump
         if (inputs.spacePressed && !m_hasJumped){
             float jumpStrength = 50.0f; // Adjust this value as needed for the desired jump strength
+
+            if (m_water == true || m_lava == true) {
+                jumpStrength = 10.f;
+            }
+
             m_velocity.y += jumpStrength;
-            m_hasJumped = true; // Player has jumped, prevent further jumps until reset
+            if (m_water == false && m_lava == false) {
+                m_hasJumped = true; // Player has jumped, prevent further jumps until reset
+            }
         }
     }
 }
@@ -119,8 +126,7 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input) {
             //if not empty block -> touching ground
             if (terrain.getBlockAt(position) != EMPTY &&
                 terrain.getBlockAt(position) != WATER &&
-                terrain.getBlockAt(position) != LAVA &&
-                position[1] >= 25) {
+                terrain.getBlockAt(position) != LAVA) {
                 // Ground is detected
                 isGrounded = true;
 
@@ -128,7 +134,7 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input) {
                 m_water = false;
                 m_lava = false;
 
-                if (terrain.getBlockAt(position) == BEDROCK) {
+                if (terrain.getBlockAt(position) == BEDROCK || position[1] < 25) {
                     m_lava = true;
                 } else if (terrain.getBlockAt(position) == SAND) {
                     m_water = true;
@@ -137,7 +143,7 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input) {
                 break;
             } else if (terrain.getBlockAt(position) == WATER) {
                 m_water = true;
-            } else if (terrain.getBlockAt(position) == LAVA || position[1] < 25) {
+            } else if (terrain.getBlockAt(position) == LAVA) {
                 m_lava = true;
             }
         }
@@ -162,7 +168,7 @@ void Player::computePhysics(float dT, const Terrain &terrain, InputBundle &input
 
     // Player falls more slowly when in liquid.
     if (m_water == true || m_lava == true) {
-        g *= float(2.0f/3.0f);
+        g *= float(0.5f/3.0f);
     }
 
     // Rather than directly changing camera position based on WASD, make the keys alter acceleration or velocity

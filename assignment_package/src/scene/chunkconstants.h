@@ -78,7 +78,8 @@ namespace ChunkConstants {
         { LAVA, glm::vec4(1.f, 0.4f, 0.f, 1.f) },
         { BEDROCK, glm::vec4(0.f, 0.f, 0.f, 1.f) },
         { SAND, glm::vec4(0.96471f, 0.84314f, 0.6902f, 1.f) },
-        { EMPTY, glm::vec4(1.f)                }
+        { DARKNESS, glm::vec4(0.f, 0.f, 0.f, 1.f) },
+        { EMPTY, glm::vec4(1.f) }
     };
 
 } // namespace constants
