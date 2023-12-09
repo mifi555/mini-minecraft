@@ -28,6 +28,13 @@ public:
     int unifTime; // A handle for the "uniform" float representing time in the shader
     int attrUV;
 
+    //***Procedural Sky
+    int unifDimensions;
+    int unifEye;
+
+    //**Fog
+    int unifPlayer;
+
 public:
     ShaderProgram(OpenGLContext* context);
     // Sets up the requisite GL data and shaders from the given .glsl files
@@ -61,6 +68,9 @@ public:
     void drawInterleavedTransparent(Drawable &d);
 
     void setTime(int t);
+
+    //***Fog
+    void setPlayerPosition(glm::vec4 pos);
 
     QString qTextFileRead(const char*);
 

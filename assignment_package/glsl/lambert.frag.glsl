@@ -16,6 +16,10 @@
 
 uniform sampler2D u_Texture; // The texture to be read from by this shader
 uniform int u_Time; //time variable to animate WATER and LAVA blocks
+
+//***Fog
+uniform vec4 u_Player; //variable used to generate fog around player
+
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
 
 // These are the interpolated values out of the rasterizer, so you can't know
@@ -34,6 +38,10 @@ in vec4 fs_UV;
 
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
+
+//constants
+const float PI = 3.14159265359;
+const float TWO_PI = 6.28318530718;
 
 float random1(vec3 p) {
     return fract(sin(dot(p,vec3(127.1, 311.7, 191.999)))
@@ -79,6 +87,20 @@ float fbm(vec3 p) {
     }
     return sum;
 }
+
+//rotation of sun on it's x axis
+vec4 sunRotation(vec3 position, float angle){
+    return vec4(position.x, cos(angle) *
+                position.y +- sin(angle) * position.z, sin(angle) * position.y + cos(angle) * position.z, 0.0f);
+}
+
+//compute sun position based on time
+vec3 computeSunPosition(float time) {
+    time = time / 24.0;
+    // Calculate the angle of the sun based on the time of day
+    float angle = time * TWO_PI; // Full circle over a period of time
+    // Compute sun position here (modify as needed)
+    return vec3(normalize(sunRotation(normalize(vec3(0, -1.0, 0)), angle)));
 
 vec4 setTextureColor(float r, float g, float b, vec4 textureColor) {
     textureColor[0] = r;
@@ -126,8 +148,6 @@ vec4 editBlockColors(vec2 uv, vec4 textureColor) {
 
 void main()
 {
-    //bool animateable = fs_UV.z;
-
     vec2 uv = fs_UV.xy;
 
     //WATER OR LAVA
@@ -147,29 +167,48 @@ void main()
 
     // Material base color (before shading)
 
-    //**UNCOMMENT TO LOAD TEXTURES
-        vec4 diffuseColor = textureColor;     // diffuse color with the texture color
-
+    vec4 diffuseColor = textureColor;     // diffuse color with the texture color
+    //**UNCOMMENT TO LOAD TEXTURE
         //vec4 diffuseColor = fs_Col;
-
         if (diffuseColor.a < 0.01f){
             discard;
         }
 
         diffuseColor = diffuseColor;
+        //**Block lighting reflected by sun
+        const vec3 sunColor = vec3(255, 255, 190) / 255.0;
+        vec3 sunDir = normalize(computeSunPosition(mod(u_Time * 0.01, 24.0)));
 
         // Calculate the diffuse term for Lambert shading
-        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
+        float diffuseTerm = dot(normalize(fs_Nor), normalize(vec4(sunDir, 0.0)));
         // Avoid negative lighting values
         diffuseTerm = clamp(diffuseTerm, 0, 1);
 
         float ambientTerm = 0.2;
 
+        //**difuseTerm * diffuseColor
+        //**ambient term * skyColor
+        //diffuseterm and ambient Term are inverses
+
         float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
                                                             //to simulate ambient lighting. This ensures that faces that are not
-                                                            //lit by our point light are not completely black.
+                                                            //lit by our point light are not completely black
 
+        //float diffuseTerm = dot(normalize(fs_Nor), normalize(u_SunDirection));
+
+        vec4 fog = vec4(0.75, 0.75, 0.75, 1);
+        float dist = length(fs_Pos.xz - u_Player.xz) * 0.01; // fog moves with player
+        
         // Compute final shaded color
+        vec4 color = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+        color = mix(color, fog, pow(smoothstep(0, 1, min(1, dist)), 2));
+
+        //UNCOMMENT TO ADD FOG
+        out_Col = vec4(color.rgb, diffuseColor.a);
+
+        //UNCOMMENT TO REMOVE FOG
+        //out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+
         out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
         //out_Col = vec4(vec3(fs_UV.xy, 0) * lightIntensity, diffuseColor.a);
 }

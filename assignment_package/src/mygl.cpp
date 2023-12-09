@@ -12,6 +12,7 @@ MyGL::MyGL(QWidget *parent)
     : OpenGLContext(parent),
       m_worldAxes(this),
       m_progLambert(this), m_progFlat(this), m_progInstanced(this),
+      m_progSky(this),
       m_progWater(this),
       m_progLava(this),
       m_renderedTexture(-1),
@@ -51,7 +52,6 @@ void MyGL::initializeGL()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-
     //~~~~
     //**Enabling alpha blending so that transparency can be applied to WATER blocks.
     glEnable(GL_BLEND);
@@ -81,7 +81,11 @@ void MyGL::initializeGL()
     m_progLambert.create(":/glsl/lambert.vert.glsl", ":/glsl/lambert.frag.glsl");
     // Create and set up the flat lighting shader
     m_progFlat.create(":/glsl/flat.vert.glsl", ":/glsl/flat.frag.glsl");
-    m_progInstanced.create(":/glsl/instanced.vert.glsl", ":/glsl/lambert.frag.glsl");
+//    m_progInstanced.create(":/glsl/instanced.vert.glsl", ":/glsl/lambert.frag.glsl");
+
+    //*** Procedural sky: create sky shader
+    m_progSky.create(":/glsl/sky.vert.glsl", ":/glsl/sky.frag.glsl");
+    m_quad.createVBOdata();
 
     // Create and set up post-processing shaders.
     m_progWater.create(":/glsl/passthrough.vert.glsl", ":/glsl/water.frag.glsl");
@@ -119,6 +123,18 @@ void MyGL::resizeGL(int w, int h) {
     m_progLambert.setViewProjMatrix(viewproj);
     m_progFlat.setViewProjMatrix(viewproj);
 
+    //***Procedural Sky
+    m_progSky.setViewProjMatrix(glm::inverse(viewproj));
+
+    m_progSky.useMe();
+    this->glUniform2i(m_progSky.unifDimensions, width() * this->devicePixelRatio(), height() * this->devicePixelRatio());
+    this->glUniform3f(m_progSky.unifEye, m_player.mcr_camera.mcr_position.x,
+                      m_player.mcr_camera.mcr_position.y,
+                      m_player.mcr_camera.mcr_position.z);
+
+    //
+
+
     m_frameBuffer.resize(this->width() * this->devicePixelRatio(), this->height() * this->devicePixelRatio(), 1);
     m_frameBuffer.create();
 
@@ -140,6 +156,8 @@ void MyGL::tick() {
 
     update(); // Calls paintGL() as part of a larger QOpenGLWidget pipeline
     sendPlayerDataToGUI(); // Updates the info in the secondary window displaying player data
+//    m_time++
+//    m_realTime += dT
 }
 
 glm::ivec2 MyGL::playerCurrentChunk() {
@@ -181,6 +199,29 @@ void MyGL::render3DScene() {
     m_progFlat.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progLambert.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progInstanced.setViewProjMatrix(m_player.mcr_camera.getViewProj());
+
+    //***Procedural Sky
+    // Sky demo
+    m_progSky.setViewProjMatrix(glm::inverse(m_player.mcr_camera.getViewProj()));
+    m_progSky.useMe();
+    this->glUniform3f(m_progSky.unifEye, m_player.mcr_camera.mcr_position.x,
+                      m_player.mcr_camera.mcr_position.y,
+                      m_player.mcr_camera.mcr_position.z);
+
+    // pass real time into shader
+    float dT = (QDateTime::currentMSecsSinceEpoch() - m_currMSecSinceEpoch) / 1000.0f;
+    m_time += dT;
+    this->glUniform1f(m_progSky.unifTime, m_time);
+
+    //for pass in real time as m_time for terrain to reflect shading based on sun rotation
+    this->glUniform1f(m_progLambert.unifTime, m_time);
+
+//    std::cout << m_time << std::endl;
+    //this->glUniform1f(m_progSky.unifTime, m_time++);
+
+
+    m_progSky.draw(m_quad);
+
     m_progWater.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progLava.setViewProjMatrix(m_player.mcr_camera.getViewProj());
 
@@ -251,6 +292,11 @@ void MyGL::renderTerrain() {
     m_texture.bind(0);
     m_progLambert.setTextureSampler(0);
     m_progLambert.setTime(m_time++);
+
+    //***Fog
+    m_progLambert.setPlayerPosition(glm::vec4(m_player.mcr_position.x,
+                                              m_player.mcr_position.y,
+                                              m_player.mcr_position.z, 0));
 
     m_progLambert.setModelMatrix(glm::mat4(1.f));
     m_terrain.draw(m_player.mcr_position, &m_progLambert);
