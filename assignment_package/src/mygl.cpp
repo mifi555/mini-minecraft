@@ -81,11 +81,9 @@ void MyGL::initializeGL()
     m_progLambert.create(":/glsl/lambert.vert.glsl", ":/glsl/lambert.frag.glsl");
     // Create and set up the flat lighting shader
     m_progFlat.create(":/glsl/flat.vert.glsl", ":/glsl/flat.frag.glsl");
-//    m_progInstanced.create(":/glsl/instanced.vert.glsl", ":/glsl/lambert.frag.glsl");
 
     //*** Procedural sky: create sky shader
     m_progSky.create(":/glsl/sky.vert.glsl", ":/glsl/sky.frag.glsl");
-    m_quad.createVBOdata();
 
     // Create and set up post-processing shaders.
     m_progWater.create(":/glsl/passthrough.vert.glsl", ":/glsl/water.frag.glsl");
@@ -131,8 +129,6 @@ void MyGL::resizeGL(int w, int h) {
     this->glUniform3f(m_progSky.unifEye, m_player.mcr_camera.mcr_position.x,
                       m_player.mcr_camera.mcr_position.y,
                       m_player.mcr_camera.mcr_position.z);
-
-    //
 
 
     m_frameBuffer.resize(this->width() * this->devicePixelRatio(), this->height() * this->devicePixelRatio(), 1);
@@ -200,6 +196,7 @@ void MyGL::render3DScene() {
     m_progLambert.setViewProjMatrix(m_player.mcr_camera.getViewProj());
     m_progInstanced.setViewProjMatrix(m_player.mcr_camera.getViewProj());
 
+
     //***Procedural Sky
     // Sky demo
     m_progSky.setViewProjMatrix(glm::inverse(m_player.mcr_camera.getViewProj()));
@@ -212,13 +209,6 @@ void MyGL::render3DScene() {
     float dT = (QDateTime::currentMSecsSinceEpoch() - m_currMSecSinceEpoch) / 1000.0f;
     m_time += dT;
     this->glUniform1f(m_progSky.unifTime, m_time);
-
-    //for pass in real time as m_time for terrain to reflect shading based on sun rotation
-    this->glUniform1f(m_progLambert.unifTime, m_time);
-
-//    std::cout << m_time << std::endl;
-    //this->glUniform1f(m_progSky.unifTime, m_time++);
-
 
     m_progSky.draw(m_quad);
 

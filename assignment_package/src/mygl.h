@@ -27,8 +27,6 @@ private:
     ShaderProgram m_progLambert;// A shader program that uses lambertian reflection
     ShaderProgram m_progFlat;// A shader program that uses "flat" reflection (no shadowing at all)
     ShaderProgram m_progInstanced;// A shader program that is designed to be compatible with instanced rendering
-
-    // m3
     ShaderProgram m_progSky; // A screen-space shader for creating the sky background
 
     // ~~~
