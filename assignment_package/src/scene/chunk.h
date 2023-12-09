@@ -87,12 +87,12 @@ const static std::unordered_map<BlockType, std::unordered_map<Direction, glm::ve
                                                             {ZPOS, glm::vec2(2.f/16.f, 14.f/16.f)},
                                                             {ZNEG, glm::vec2(2.f/16.f, 14.f/16.f)}}},
 
-  {BEDROCK, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(1.f/16.f, 1.f/16.f)},
-                                                               {XNEG, glm::vec2(1.f/16.f, 1.f/16.f)},
-                                                               {YPOS, glm::vec2(1.f/16.f, 1.f/16.f)},
-                                                               {YNEG, glm::vec2(1.f/16.f, 1.f/16.f)},
-                                                               {ZPOS, glm::vec2(1.f/16.f, 1.f/16.f)},
-                                                               {ZNEG, glm::vec2(1.f/16.f, 1.f/16.f)}}},
+  {BEDROCK, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(1.f/16.f, 14.f/16.f)},
+                                                               {XNEG, glm::vec2(1.f/16.f, 14.f/16.f)},
+                                                               {YPOS, glm::vec2(1.f/16.f, 14.f/16.f)},
+                                                               {YNEG, glm::vec2(1.f/16.f, 14.f/16.f)},
+                                                               {ZPOS, glm::vec2(1.f/16.f, 14.f/16.f)},
+                                                               {ZNEG, glm::vec2(1.f/16.f, 14.f/16.f)}}},
 };
 
 class Chunk;

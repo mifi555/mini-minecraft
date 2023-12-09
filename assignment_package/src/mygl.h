@@ -28,12 +28,17 @@ private:
     ShaderProgram m_progFlat;// A shader program that uses "flat" reflection (no shadowing at all)
     ShaderProgram m_progInstanced;// A shader program that is designed to be compatible with instanced rendering
 
+    // m3
+    ShaderProgram m_progSky; // A screen-space shader for creating the sky background
+
     // ~~~
     PostProcessShader m_progWater;// A shader program used for post-process water effect rendering.
     PostProcessShader m_progLava;// A shader program used for post-process lava effect rendering.
     GLuint m_renderedTexture;
     int m_time;
     FrameBuffer m_frameBuffer; // Frame buffer used for scene rendering.
+
+
     Quad m_quad;  // Quadrangle used for post-process rendering.
     // ~~~
 

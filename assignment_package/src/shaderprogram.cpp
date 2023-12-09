@@ -4,6 +4,7 @@
 #include <QTextStream>
 #include <QDebug>
 #include <stdexcept>
+#include <iostream>
 
 
 ShaderProgram::ShaderProgram(OpenGLContext *context)
@@ -11,11 +12,14 @@ ShaderProgram::ShaderProgram(OpenGLContext *context)
       attrPos(-1), attrNor(-1), attrCol(-1),
       unifModel(-1), unifModelInvTr(-1), unifViewProj(-1), unifColor(-1),
       unifSampler2D(-1), unifTime(-1), attrUV(-1),
+      unifDimensions(-1), unifEye(-1),
+      unifPlayer(-1),
       context(context)
 {}
 
 void ShaderProgram::create(const char *vertfile, const char *fragfile)
 {
+    std::cout << vertfile << ", " << fragfile << std::endl;
     // Allocate space on our GPU for a vertex shader and a fragment shader and a shader program to manage the two
     vertShader = context->glCreateShader(GL_VERTEX_SHADER);
     fragShader = context->glCreateShader(GL_FRAGMENT_SHADER);
@@ -86,6 +90,14 @@ void ShaderProgram::setupMemberVars()
 
     unifSampler2D = context->glGetUniformLocation(prog, "u_Texture");
     unifTime = context->glGetUniformLocation(prog, "u_Time");
+
+    //***Procedural Sky
+    unifDimensions = context->glGetUniformLocation(prog, "u_Dimensions");
+    unifEye = context->glGetUniformLocation(prog, "u_Eye");
+
+    //***Fog
+    unifPlayer = context->glGetUniformLocation(prog, "u_Player");
+
 }
 
 void ShaderProgram::useMe()
@@ -440,5 +452,14 @@ void ShaderProgram::setTime(int t)
     if(unifTime != -1)
     {
         context->glUniform1i(unifTime, t);
+    }
+}
+
+void ShaderProgram::setPlayerPosition(glm::vec4 pos) {
+    useMe();
+
+    if(unifPlayer != -1)
+    {
+        context->glUniform4fv(unifPlayer, 1, &pos[0]);
     }
 }
