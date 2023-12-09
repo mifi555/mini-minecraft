@@ -101,6 +101,7 @@ vec3 computeSunPosition(float time) {
     float angle = time * TWO_PI; // Full circle over a period of time
     // Compute sun position here (modify as needed)
     return vec3(normalize(sunRotation(normalize(vec3(0, -1.0, 0)), angle)));
+}
 
 vec4 setTextureColor(float r, float g, float b, vec4 textureColor) {
     textureColor[0] = r;
