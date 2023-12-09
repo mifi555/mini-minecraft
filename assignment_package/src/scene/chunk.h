@@ -74,29 +74,6 @@ enum Direction : unsigned char
     XPOS, XNEG, YPOS, YNEG, ZPOS, ZNEG
 };
 
-
-const static std::unordered_map<BlockType, std::unordered_map<Direction, glm::vec2, EnumHash>, EnumHash> blockFaceUVs {
-    {GRASS, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(3.f/16.f, 15.f/16.f)}, //right side of the grass
-                                                               {XNEG, glm::vec2(3.f/16.f, 15.f/16.f)}, //left side of the grass
-                                                               {YPOS, glm::vec2(8.f/16.f, 13.f/16.f)}, //top of grass
-                                                               {YNEG, glm::vec2(2.f/16.f, 15.f/16.f)}, //bottom of grass
-                                                               {ZPOS, glm::vec2(3.f/16.f, 15.f/16.f)}, //front side of grass
-                                                               {ZNEG, glm::vec2(3.f/16.f, 15.f/16.f)}}}, //back side of grass
-
-    {DIRT, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(2.f/16.f, 15.f/16.f)},
-                                                              {XNEG, glm::vec2(2.f/16.f, 15.f/16.f)},
-                                                              {YPOS, glm::vec2(2.f/16.f, 15.f/16.f)},
-                                                              {YNEG, glm::vec2(2.f/16.f, 15.f/16.f)},
-                                                              {ZPOS, glm::vec2(2.f/16.f, 15.f/16.f)},
-                                                              {ZNEG, glm::vec2(2.f/16.f, 15.f/16.f)}}},
-
-    {STONE, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(1.f/16.f, 15.f/16.f)},
-                                                               {XNEG, glm::vec2(1.f/16.f, 15.f/16.f)},
-                                                               {YPOS, glm::vec2(1.f/16.f, 15.f/16.f)},
-                                                               {YNEG, glm::vec2(1.f/16.f, 15.f/16.f)},
-                                                               {ZPOS, glm::vec2(1.f/16.f, 15.f/16.f)},
-                                                               {ZNEG, glm::vec2(1.f/16.f, 15.f/16.f)}}},
-
 const static std::unordered_map<BlockType, std::unordered_map<Direction, glm::vec2, EnumHash>, EnumHash> blockFaceUVs {
   {GRASS, std::unordered_map<Direction, glm::vec2, EnumHash>{{XPOS, glm::vec2(3.f/16.f, 15.f/16.f)}, //right side of the grass
                                                              {XNEG, glm::vec2(3.f/16.f, 15.f/16.f)}, //left side of the grass
