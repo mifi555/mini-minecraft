@@ -147,6 +147,8 @@ vec4 editBlockColors(vec2 uv, vec4 textureColor) {
     return newTextureColor;
 }
 
+#define FOG
+//#define NO_FOG
 void main()
 {
     vec2 uv = fs_UV.xy;
@@ -169,8 +171,8 @@ void main()
     // Material base color (before shading)
 
     vec4 diffuseColor = textureColor;     // diffuse color with the texture color
-    //**UNCOMMENT TO LOAD TEXTURE
         //vec4 diffuseColor = fs_Col;
+
         if (diffuseColor.a < 0.01f){
             discard;
         }
@@ -197,19 +199,25 @@ void main()
 
         //float diffuseTerm = dot(normalize(fs_Nor), normalize(u_SunDirection));
 
-        vec4 fog = vec4(0.75, 0.75, 0.75, 1);
-        float dist = length(fs_Pos.xz - u_Player.xz) * 0.01; // fog moves with player
+        vec4 fog = vec4(0.5, 0.5, 0.5, 1.0);
+
+        float distance = length(fs_Pos.xz - u_Player.xz) * 0.01;
         
         // Compute final shaded color
         vec4 color = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
-        color = mix(color, fog, pow(smoothstep(0, 1, min(1, dist)), 2));
 
-        //UNCOMMENT TO ADD FOG
+        // Make sure distance does not exceed 1
+        float distance2 = min(1, distance);
+
+        // Create fog effect
+        color = mix(color, fog, pow(smoothstep(0, 1, distance2), 3));
+
+#ifdef FOG
         out_Col = vec4(color.rgb, diffuseColor.a);
+#endif
 
-        //UNCOMMENT TO REMOVE FOG
-        //out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
-
+#ifdef NO_FOG
         out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+#endif
         //out_Col = vec4(vec3(fs_UV.xy, 0) * lightIntensity, diffuseColor.a);
 }
