@@ -59,3 +59,15 @@ https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 
 11/20 5:02PM - Got help with some clarifying questions from Dineth for my submission and feedback on my caves and shader implementations.
 
+Milestone 3
+-----------
+
+Milan
+------
+Used Procedural Sky starter shader code that was posted on EdStem
+
+12/6 3:30PM Received help from Dineth on hard coding day/night cycle time intervals
+
+12/7 2:00PM Received help from Logan outside of office hours when trying to calculate a 24hr in-game day/night cycle
+
+12/8 5:00PM Received help from Adam to synchronize sun rotation, changes in sky color, and terrain color based on sun’s color and direction. 
