@@ -174,6 +174,8 @@ Using the BlockType of a given block, set the UV coordinates of a square face in
 
 Enabled alpha blending in MyGL::initializeGL() so that transparency can be applied to WATER blocks.
 
+_DIFFICULTIES_: loading in textures and splitting VBO data into transparent and opaque blocks.
+
 ## MILESTONE 3
 
 Video link:
@@ -184,9 +186,22 @@ Timestamps:
 
 **Michael:**
 
-**Milan: Procedural Sky, Fog**
+**Milan: Procedural Sky/Day Night Cycle, Fog**
 
+_SKY_
+- Added a new Sky shader (sky.frag, sky.vert) and created a procedural sky background using the raycast method. Sky is drawn using a quad in MyGL (also changed quad array pos z value from 0.99f to 1.f in quad class) to fix clipping. Noise functions are used to generate the clouds.
 
+- Modified the ShaderProgram by adding new uniform variables (int unifDimensions, int unifEye)
 
+- Modified the position of the sun in the sky over time by rotating the sun on its x axis, changing the sky's color as the sun moves around the terrain.
+
+- Passed in m_time incremented by dt in MyGL to the Sky shader in order to represent real time. Adjusted game time in sky.frag to create a 24 hour day/night cycle. Hard coded time intervals with unique sky colors (sunrise, noon, sunset, dusk, night) and interpolated between them as time advanced. Added stars that are generated using Worley noise that appear at night time.
+
+- Used the light direction and color in the lambert shader to match terrain color with the sky's sun and color based on the sun’s rotation and time.
+
+_FOG_
+- Created a fog around the player position by adding a handle to represent player position in the Shaderprogam and interpolated block color with fog color determined by the distance of the object from the player, creating a fog effect that intensifies with distance.
+
+_DIFFICULTIES_: synchronizing day/night cycle with the sun's rotation. Fixed by passing real change in time into the sky shader.
 
 
