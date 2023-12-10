@@ -101,7 +101,7 @@ void applyNoise() {
         // Water and lava waves.
         vec4 newPos = vs_Pos;
         float noise = WorleyNoise(vs_Pos.xy);
-        newPos.xy = newPos.xy + 0.15 * float(sin(u_Time * noise * 0.05));
+        newPos.xy = newPos.xy + 0.3 * float(sin(u_Time * noise * 0.05));
         fs_Pos = newPos;
     } else {
         fs_Pos = vs_Pos;

@@ -136,7 +136,7 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input) {
 
                 if (terrain.getBlockAt(position) == BEDROCK || position[1] < 25) {
                     m_lava = true;
-                } else if (terrain.getBlockAt(position) == SAND) {
+                } else if (terrain.getBlockAt(position) == SAND || terrain.getBlockAt(position) == MUD) {
                     m_water = true;
                 }
 
