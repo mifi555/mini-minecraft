@@ -82,7 +82,6 @@ _Difficulties + Potential improvements_
 
 Video Link: https://drive.google.com/file/d/1kn9rcbHVXe5LEEVcnnFHx_L-bWODC4vj/view?usp=drive_link 
 
-
 Timestamps
 
 0:00 - 1:18: Cave Systems and Post-Processing
@@ -174,6 +173,19 @@ Altered lambert.frag.glsl so that it includes a time variable to animate the UVs
 Using the BlockType of a given block, set the UV coordinates of a square face in the Chunk VBO so that they correspond to the appropriate texture square by using an unordered map of block type and UV coordinates 
 
 Enabled alpha blending in MyGL::initializeGL() so that transparency can be applied to WATER blocks.
+
+## MILESTONE 3
+
+Video link:
+
+Timestamps:
+
+**Joseph:**
+
+**Michael:**
+
+**Milan: Procedural Sky, Fog**
+
 
 
 
