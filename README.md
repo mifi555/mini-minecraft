@@ -183,6 +183,36 @@ Timestamps:
 
 **Joseph:**
 
+_Additional Biomes_
+
+- Created noise functions for the Summit Grove Plateaus and Mushroom Vale biomes.
+
+- Added an additional t-value generator for the new biomes and a humidity noise function to help differentiate between the pairs of biomes at each (x, z) location.
+
+- Implemented smoothed biome blending and interpolation between all four biomes.
+
+- Defined the block structure and layering for the new biomes.
+
+_Post-process Camera Overlay_
+
+- Implemented water and lava post-process camera overlay with custom shaders that emulate water distortion effects via UV coordinate warping. Warping utilizes WorleyNoise and occurs as a function of time.
+
+_Water and Lava Waves_
+
+- In the Lambert vertex shader, applied a sin function that incorporates Worley noise and time to the x and y values of water and lava blocks to create water and lava waves.
+
+_Procedural Assets_
+
+- Added various block types used for the new biomes, caves, and procedural assets. Assigned textures to each block type.
+
+- Created functions for defining procedural asset placement probabilities, placing assets depending on block type, and creating primitives including different types of trees and mushrooms. Assets include grass, flowers, mushrooms, trees, and bushes.
+
+- Defined custom block colors based on the existing texture palette for use with the procedural assets.
+
+_CHALLENGES_
+
+The most challenging portion of this milestone was getting the four biomes to smoothly interpolate. This definitely took the most time to get right out of all of my tasks. I also feel like I hit a wall when I was working with the noise functions, which made it difficult to find patterns that I found appealing to use for the new biomes.
+
 **Michael:**
 
 **Milan: Procedural Sky/Day Night Cycle, Fog**

@@ -102,7 +102,7 @@ void Player::processInputs(const Terrain &terrain, InputBundle &inputs) {
             float jumpStrength = 50.0f; // Adjust this value as needed for the desired jump strength
 
             if (m_water == true || m_lava == true) {
-                jumpStrength = 10.f;
+                jumpStrength = 5.f;
             }
 
             m_velocity.y += jumpStrength;
@@ -136,7 +136,7 @@ bool Player::playerOnGround(const Terrain &terrain, InputBundle &input) {
 
                 if (terrain.getBlockAt(position) == BEDROCK || position[1] < 25) {
                     m_lava = true;
-                } else if (terrain.getBlockAt(position) == SAND || terrain.getBlockAt(position) == MUD) {
+                } else if (terrain.getBlockAt(position) == SAND) {
                     m_water = true;
                 }
 

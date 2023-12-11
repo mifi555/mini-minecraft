@@ -71,3 +71,16 @@ Used Procedural Sky starter shader code that was posted on EdStem
 12/7 2:00PM Received help from Logan outside of office hours when trying to calculate a 24hr in-game day/night cycle
 
 12/8 5:00PM Received help from Adam to synchronize sun rotation, changes in sky color, and terrain color based on sun’s color and direction. 
+
+Joseph
+------
+
+11/29 5:04PM - Got help from Kevin with some clarifying questions and feedback on biomes and water waves.
+
+11/29 5:41PM - Got help from Thomas with some clarifying questions on bilinear interpolation.
+
+12/4 3:05PM - Got help from Professor Adam with humidity interpolation clarifications.
+
+12/6 5:32PM - Got help from Logan with interpolation smoothing issue.
+
+12/7 6:50PM - Got help with grass textures and general feedback from Saksham.
