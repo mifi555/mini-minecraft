@@ -177,9 +177,17 @@ _DIFFICULTIES_: loading in textures and splitting VBO data into transparent and 
 
 ## MILESTONE 3
 
-Video link:
+Video link: https://drive.google.com/file/d/1pWWu8ayry6nIkigPQSAintwixpzDHSeD/view
 
-Timestamps:
+Timestamps: 
+
+0:00 - 0:58: Additional Biomes, Post-process Camera Overlay, Waves, Procedural Assets
+
+0:59 - 1:57: Procedural Sky, Fog
+
+1:58 - 2:53: Super Mario 64 Implementation
+
+2:54 - 3:09: Credits
 
 **Joseph:**
 
