@@ -230,6 +230,8 @@ _SKY_
 
 _FOG_
 - Created a fog around the player position by adding a handle to represent player position in the Shaderprogam and interpolated block color with fog color determined by the distance of the object from the player, creating a fog effect that intensifies with distance.
+- Fog can be disabled: uncomment NO_FOG and comment out FOG in lambert.frag
+
 
 _DIFFICULTIES_: synchronizing day/night cycle with the sun's rotation. Fixed by passing real change in time into the sky shader.
 
