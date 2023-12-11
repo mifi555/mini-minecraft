@@ -55,7 +55,8 @@ _"Mario 64 Mode" libsm64.h implementation in Mini Minecraft Engine_
 Because my group members use Apple Mac's and my feature only runs on Windows, there are two seperate 
 branches of the mini-minecraft code: one with the mario 64 mode (works only on windows) and one without (works on either platform). 
 
-"Mario-mode" branch: **[michaelm_mario64_merge](https://github.com/CIS4600-Fall-2023/mini-minecraft-stop-playin-and-unblock-me/tree/michaelm_mario64_merge)**
+"Mario-mode" branch: [michaelm_mario64_merge](https://github.com/CIS4600-Fall-2023/mini-minecraft-stop-playin-and-unblock-me/tree/michaelm_mario64_merge)
+
 Normal branch: [master](https://github.com/CIS4600-Fall-2023/mini-minecraft-stop-playin-and-unblock-me/tree/master)
 
 To run the "mario-mode", there is also an additional step:
@@ -77,6 +78,8 @@ To run the "mario-mode", there is also an additional step:
   * STONE: a "stone" sound when mario walks on it
   * CAVE ROCKS: in caves, mario can monkey climb the cave ceilings
 - Implemented a Qt audio buffer that handles and plays music and SFX samples that come from the mario 64 engine
+
+All of these features are implemented primarily from one class, `Mario64`. More info can be found by reading the code in [mario64.h](https://github.com/CIS4600-Fall-2023/mini-minecraft-stop-playin-and-unblock-me/blob/michaelm_mario64_merge/assignment_package/src/scene/mario64.h)
   
 **Milan: Procedural Sky/Day Night Cycle, Fog**
 
