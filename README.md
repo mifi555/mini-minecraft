@@ -223,6 +223,35 @@ The most challenging portion of this milestone was getting the four biomes to sm
 
 **Michael:**
 
+_"Mario 64 Mode" libsm64.h implementation in Mini Minecraft Engine_
+
+***IMPORTANT INFO ABOUT THIS FEATURE:***
+Because my group members use Apple Mac's and my feature only runs on Windows, there are two seperate 
+branches of the mini-minecraft code: one with the mario 64 mode (works only on windows) and one without (works on either platform). 
+
+"Mario-mode" branch: **[michaelm_mario64_merge](https://github.com/CIS4600-Fall-2023/mini-minecraft-stop-playin-and-unblock-me/tree/michaelm_mario64_merge)**
+Normal branch: [master](https://github.com/CIS4600-Fall-2023/mini-minecraft-stop-playin-and-unblock-me/tree/master)
+
+To run the "mario-mode", there is also an additional step:
+
+1. compile mini-minecraft with qt creator like normal
+2. from `assignment_package/libs`, copy `sm64.dll` into the location of the executable (either in Debug or Release, depending on your Qt setup..)
+
+- The ability to spawn Super Mario from Super Mario 64 using the libsm64.h library from https://github.com/libsm64/libsm64
+     * the libsm64 library is a C code library that provides an interface to the movement and rendering code of Super Mario 64
+     * It must be compiled from scratch for each platform, currently only Windows is supported
+- Implemented third-person camera around mario
+- Implemented collision surface generation for mario, which is multi-threaded
+  * Because libsm64 has it's own collision system, we need to send block data to it
+  * Similar to the multi-threaded terrain generation milestone, we have a multi-threaded system to produce a 3x3 chunk radius around mario of collision surfaces that will be sent to the mario 64 engine. 
+- Implemented different block-types that mario can react to:
+  * LAVA: burning and will kill mario
+  * SAND: acts like quicksand and will kill mario
+  * GRASS: a "grass" sound when mario walks on it
+  * STONE: a "stone" sound when mario walks on it
+  * CAVE ROCKS: in caves, mario can monkey climb the cave ceilings
+- Implemented a Qt audio buffer that handles and plays music and SFX samples that come from the mario 64 engine
+  
 **Milan: Procedural Sky/Day Night Cycle, Fog**
 
 _SKY_
